@@ -26,7 +26,6 @@ import {
   playDieRoll,
   showRollStage,
   hideRollStage,
-  getPlayer,
   showPlayerSelect,
   setDiceHint,
   renderResult,
@@ -38,7 +37,6 @@ import {
   shakeScreen,
   resetBalanceDisplay,
   onModeClick,
-  preloadWalkFrames,
   prewarmAllCharacterArt,
 } from './ui.js';
 
@@ -145,7 +143,13 @@ function startRun(mode) {
 }
 
 function restartGame() {
-  startRun(state.mode);
+  askPlayerThenStart(state.mode);
+}
+
+// Back to the main HE/SHE screen; the run starts only after a fresh pick.
+function askPlayerThenStart(mode) {
+  hideGameOver();
+  showPlayerSelect(() => startRun(mode));
 }
 
 function initSoundToggle() {
@@ -158,12 +162,12 @@ function initSoundToggle() {
 
 function init() {
   document.getElementById('playAgainBtn').addEventListener('click', restartGame);
-  document.getElementById('playDailyBtn').addEventListener('click', () => startRun('daily'));
+  document.getElementById('playDailyBtn').addEventListener('click', () => askPlayerThenStart('daily'));
   onModeClick(() => startRun(state.mode === 'daily' ? 'free' : 'daily'));
   initSoundToggle();
   document.getElementById('playerBtn').addEventListener('click', () => showPlayerSelect());
-  if (!getPlayer()) showPlayerSelect();
-  else preloadWalkFrames(getPlayer());
+  // Nothing is persisted, so every visit starts on the player-select screen.
+  showPlayerSelect();
   render();
   // Warm the recolor cache in the background so later cards render instantly.
   prewarmAllCharacterArt(CHARACTERS, COLOR_PALETTE);

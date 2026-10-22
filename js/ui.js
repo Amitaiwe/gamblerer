@@ -345,19 +345,19 @@ export function hideResult() {
 
 /* ---------------- PLAYER (HE / SHE) ---------------- */
 
-const PLAYER_KEY = 'gamblerer.player';
+// The HE/SHE choice is kept in memory only: it is never persisted, so every
+// visit and every "play again" asks for a player again. Also remove any value
+// saved by older versions, so returning players are asked too.
+try { window.localStorage.removeItem('gamblerer.player'); } catch (e) { /* ignore */ }
+
+let currentPlayer = null;
 
 export function getPlayer() {
-  try {
-    const v = window.localStorage.getItem(PLAYER_KEY);
-    return v === 'he' || v === 'she' ? v : null;
-  } catch (e) {
-    return null;
-  }
+  return currentPlayer;
 }
 
-function savePlayer(v) {
-  try { window.localStorage.setItem(PLAYER_KEY, v); } catch (e) { /* ignore */ }
+function setPlayer(v) {
+  currentPlayer = v === 'he' || v === 'she' ? v : null;
 }
 
 const HELP = {
@@ -408,12 +408,12 @@ function initHelp() {
 export function showPlayerSelect(onPick) {
   initHelp();
   const screen = el('playerSelect');
-  const current = getPlayer();
   ['pickHe', 'pickShe'].forEach((id) => {
     const btn = el(id);
-    btn.classList.toggle('is-current', btn.dataset.player === current);
+    // No "current" highlight: the choice is not remembered between visits.
+    btn.classList.remove('is-current');
     btn.onclick = () => {
-      savePlayer(btn.dataset.player);
+      setPlayer(btn.dataset.player);
       preloadWalkFrames(btn.dataset.player);
       screen.hidden = true;
       if (onPick) onPick(btn.dataset.player);
