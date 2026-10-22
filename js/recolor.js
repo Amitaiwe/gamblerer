@@ -98,6 +98,16 @@ export async function getRecoloredImage(assetSrc, maskSrc, colorHex) {
         ctx.drawImage(maskCanvas, 0, 0);
         ctx.restore();
 
+        // Boost: lift brightness and saturation of the recolored clothing so the new color reads clearly.
+        ctx.save();
+        ctx.globalCompositeOperation = 'soft-light';
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(maskCanvas, 0, 0);
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 0.18;
+        ctx.drawImage(maskCanvas, 0, 0);
+        ctx.restore();
+
         // Re-apply original silhouette alpha so the color blend never
         // bleeds a faint tint outside the character's own edges.
         ctx.save();

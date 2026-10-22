@@ -4,13 +4,13 @@
    ========================================================== */
 
 :root {
-  --bg-void: #0d0408;
-  --velvet: #2a0912;
-  --velvet-hi: #5a1220;
+  --bg-void: #2a0e18;
+  --velvet: #5a1a2c;
+  --velvet-hi: #9a2c44;
   --gold: #e5c158;
   --gold-soft: #f2d98a;
   --gold-dim: #b99a52;
-  --cream: #f4e9d0;
+  --cream: #fff6e0;
   --green: #58e08f;
   --red: #ff6a5c;
   --red-deep: #a8161b;
@@ -40,8 +40,8 @@ body::before {
   content: "";
   position: fixed; inset: 0; pointer-events: none;
   background:
-    repeating-linear-gradient(45deg, rgba(229,193,88,.045) 0 2px, transparent 2px 22px),
-    repeating-linear-gradient(-45deg, rgba(229,193,88,.045) 0 2px, transparent 2px 22px);
+    repeating-linear-gradient(45deg, rgba(229,193,88,.07) 0 2px, transparent 2px 22px),
+    repeating-linear-gradient(-45deg, rgba(229,193,88,.07) 0 2px, transparent 2px 22px);
 }
 
 #app {
