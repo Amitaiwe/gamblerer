@@ -295,7 +295,51 @@ function savePlayer(v) {
   try { window.localStorage.setItem(PLAYER_KEY, v); } catch (e) { /* ignore */ }
 }
 
+const HELP = {
+  en: {
+    dir: 'ltr', title: 'HOW TO PLAY', toggle: 'HE', close: 'GOT IT',
+    lines: [
+      'Virtual money only. You start with $1,000. Nothing here is real.',
+      'Every station offers two bets. Pick one. It costs money up front.',
+      'Then a die is rolled. Each number from 1 to 6 is equally likely. The offer shows what each number pays: red means you lose money, green means you win.',
+      'Every second station is ALL-IN: your whole balance is at stake.',
+      'After each bet you walk to the next station. When your balance hits $0, the game is over.',
+      'Your highest balance is saved and you can share it on WhatsApp.',
+    ],
+  },
+  he: {
+    dir: 'rtl', title: 'איך משחקים', toggle: 'EN', close: 'הבנתי',
+    lines: [
+      'כסף וירטואלי בלבד. מתחילים עם $1,000. שום דבר כאן אינו אמיתי.',
+      'בכל תחנה יש שתי הצעות הימור. בוחרים אחת, והיא עולה כסף מראש.',
+      'אחר כך מוטלת קוביה. לכל מספר מ-1 עד 6 יש סיכוי שווה. ההצעה מראה כמה משלם כל מספר: אדום זה הפסד, ירוק זה רווח.',
+      'כל תחנה שנייה היא ALL-IN: כל היתרה שלך על הכף.',
+      'אחרי כל הימור הולכים לתחנה הבאה. כשהיתרה מגיעה ל-$0 המשחק נגמר.',
+      'היתרה הכי גבוהה שלך נשמרת, ואפשר לשתף אותה בוואטסאפ.',
+    ],
+  },
+};
+let helpLang = 'en';
+function renderHelp() {
+  const h = HELP[helpLang];
+  const panel = el('helpPanel');
+  panel.dir = h.dir;
+  panel.lang = helpLang;
+  el('helpTitle').textContent = h.title;
+  el('helpLang').textContent = h.toggle;
+  el('helpClose').textContent = h.close;
+  const body = el('helpBody');
+  body.textContent = '';
+  h.lines.forEach((t) => { const p = document.createElement('p'); p.textContent = t; body.appendChild(p); });
+}
+function initHelp() {
+  el('helpBtn').onclick = () => { renderHelp(); el('helpPanel').hidden = false; };
+  el('helpLang').onclick = () => { helpLang = helpLang === 'en' ? 'he' : 'en'; renderHelp(); };
+  el('helpClose').onclick = () => { el('helpPanel').hidden = true; };
+}
+
 export function showPlayerSelect(onPick) {
+  initHelp();
   const screen = el('playerSelect');
   const current = getPlayer();
   ['pickHe', 'pickShe'].forEach((id) => {
