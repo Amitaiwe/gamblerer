@@ -19,59 +19,119 @@ const el = (id) => document.getElementById(id);
 
 /* ---------------- TOP BAR / PROGRESS ---------------- */
 
+let shownBalance = null;
+let balanceRaf = null;
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function animateBalance(target) {
+  const node = el('statBalance');
+  if (balanceRaf) cancelAnimationFrame(balanceRaf);
+  if (shownBalance === null || shownBalance === target || reduceMotion) {
+    shownBalance = target;
+    node.textContent = formatUSD(target);
+    return;
+  }
+  const from = shownBalance;
+  const up = target > from;
+  node.classList.remove('flash-up', 'flash-down');
+  void node.offsetWidth; // restart the CSS animation
+  node.classList.add(up ? 'flash-up' : 'flash-down');
+  const start = performance.now();
+  const dur = 700;
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    shownBalance = Math.round(from + (target - from) * eased);
+    node.textContent = formatUSD(shownBalance);
+    if (t < 1) balanceRaf = requestAnimationFrame(tick);
+    else shownBalance = target;
+  };
+  balanceRaf = requestAnimationFrame(tick);
+}
+
+/** Short screen shake, used when the balance hits $0. */
+export function shakeScreen() {
+  if (reduceMotion) return;
+  const app = el('app');
+  app.classList.remove('shake');
+  void app.offsetWidth;
+  app.classList.add('shake');
+  if (navigator.vibrate) { try { navigator.vibrate([80, 40, 160]); } catch (e) { /* ignore */ } }
+}
+
+export function resetBalanceDisplay(balance) {
+  shownBalance = balance;
+  if (balanceRaf) cancelAnimationFrame(balanceRaf);
+  el('statBalance').textContent = formatUSD(balance);
+}
+
 export function renderTopBar(state) {
-  el('statBalance').textContent = formatUSD(state.balance);
+  animateBalance(state.balance);
   el('statStation').textContent = String(state.station);
   el('statBest').textContent = String(state.bestStation);
 
   const badge = el('stationBadge');
+  const daily = state.mode === 'daily' ? 'DAILY · ' : '';
   if (state.isAllIn) {
-    badge.textContent = 'ALL-IN STATION';
+    badge.textContent = daily + 'ALL-IN STATION';
     badge.classList.add('is-allin');
   } else {
-    badge.textContent = 'ORDINARY BET';
+    badge.textContent = daily + 'ORDINARY BET';
     badge.classList.remove('is-allin');
   }
+
+  // Mode switch only before the first bet of a run
+  const row = el('modeRow');
+  row.hidden = !(state.station === 1 && !state.locked);
+  el('modeBtn').textContent =
+    state.mode === 'daily'
+      ? `DAILY CHALLENGE ${state.dateKey} · tap for FREE PLAY`
+      : 'FREE PLAY · tap for DAILY CHALLENGE';
+}
+
+export function onModeClick(handler) {
+  el('modeBtn').onclick = handler;
 }
 
 /* ---------------- OFFER CARDS ---------------- */
 
-function buildOutcomeRows(offer, isAllIn) {
-  // Group identical payouts across dice faces for compact display.
-  const groups = new Map(); // payoutDisplay -> [faces]
-  for (let face = 1; face <= 6; face++) {
-    let payoutAmount;
-    let payoutLabel;
-    if (isAllIn) {
-      const mult = offer.payoutMultipliers[String(face)];
-      payoutAmount = mult; // store multiplier, resolved to $ at render using cost
-      payoutLabel = mult === 0 ? 'BUST' : `${mult}× stake`;
-    } else {
-      payoutAmount = offer.payouts[String(face)];
-      payoutLabel = formatUSD(payoutAmount);
-    }
-    const key = payoutLabel;
-    if (!groups.has(key)) groups.set(key, { faces: [], payoutAmount, isAllIn });
-    groups.get(key).faces.push(face);
-  }
+function compactMoney(n) {
+  const a = Math.abs(n);
+  if (n === 0) return '0';
+  const sign = n < 0 ? '-' : '+';
+  if (a >= 1e6) return `${sign}${(a / 1e6).toFixed(a >= 1e7 ? 0 : 1)}M`;
+  if (a >= 1e4) return `${sign}${Math.round(a / 1e3)}K`;
+  if (a >= 1e3) return `${sign}${(a / 1e3).toFixed(1)}K`;
+  return `${sign}${Math.round(a)}`;
+}
 
-  const rows = [];
-  for (const [label, { faces, payoutAmount }] of groups.entries()) {
-    const facesStr = faces.join(', ');
-    let netText = '';
-    let netClass = '';
-    if (isAllIn) {
-      const net = payoutAmount - 1; // relative to stake multiplier of 1.0
-      netText = net >= 0 ? `+${Math.round(net * 100)}%` : `${Math.round(net * 100)}%`;
-      netClass = net >= 0 ? 'net-positive' : 'net-negative';
-    } else {
-      const net = payoutAmount - offer.cost;
-      netText = net >= 0 ? `+${formatUSD(net)}` : `-${formatUSD(Math.abs(net))}`;
-      netClass = net >= 0 ? 'net-positive' : 'net-negative';
-    }
-    rows.push({ facesStr, faces, label, netText, netClass });
+/** Net result per die face (1..6): $ for ordinary bets, fraction of stake for ALL-IN. */
+function faceNets(offer, isAllIn) {
+  const nets = [];
+  for (let face = 1; face <= 6; face++) {
+    if (isAllIn) nets.push(offer.payoutMultipliers[String(face)] - 1);
+    else nets.push(offer.payouts[String(face)] - offer.cost);
   }
-  return rows;
+  return nets;
+}
+
+function faceLabel(net, isAllIn) {
+  if (isAllIn) return net <= -1 ? 'BUST' : `${net >= 0 ? '+' : '-'}${Math.abs(Math.round(net * 100))}%`;
+  return compactMoney(net);
+}
+
+/** Risk line: chance (out of 6 equal die faces) to end the bet in profit / in loss. */
+export function riskSummary(offer, isAllIn) {
+  const nets = faceNets(offer, isAllIn);
+  const profit = nets.filter((n) => n > 0).length;
+  const loss = nets.filter((n) => n < 0).length;
+  return {
+    profit,
+    loss,
+    even: 6 - profit - loss,
+    profitPct: Math.round((profit / 6) * 100),
+    lossPct: Math.round((loss / 6) * 100),
+  };
 }
 
 async function renderOfferCardArt(imgEl, offer) {
@@ -120,13 +180,18 @@ export function renderOffers(state, onSelect) {
     label.textContent = offer.label || (state.isAllIn ? 'ALL-IN' : 'Ordinary Bet');
     costValue.textContent = formatUSD(offer.cost);
 
-    const rows = buildOutcomeRows(offer, state.isAllIn);
-    rows.forEach((r) => {
+    const risk = riskSummary(offer, state.isAllIn);
+    const riskEl = node.querySelector('.offerCard__risk');
+    riskEl.innerHTML =
+      `Profit chance <b class="net-positive">${risk.profitPct}%</b>` +
+      ` · Loss <b class="net-negative">${risk.lossPct}%</b>`;
+
+    const nets = faceNets(offer, state.isAllIn);
+    nets.forEach((net, i) => {
       const li = document.createElement('li');
-      li.className = 'offerCard__outcome';
-      const chipClass = r.netClass === 'net-positive' ? 'win' : 'lose';
-      const chips = r.faces.map((f) => `<span class="faceChip ${chipClass}">${f}</span>`).join('');
-      li.innerHTML = `<span class="dice-faces">${chips}</span><span class="${r.netClass}">${r.netText}</span>`;
+      const cls = net > 0 ? 'win' : net < 0 ? 'lose' : 'even';
+      li.className = `faceCell ${cls}`;
+      li.innerHTML = `<span class="faceCell__n">${i + 1}</span><span class="faceCell__v">${faceLabel(net, state.isAllIn)}</span>`;
       outcomesList.appendChild(li);
     });
 
@@ -304,6 +369,7 @@ const HELP = {
       'Then a die is rolled. Each number from 1 to 6 is equally likely. The offer shows what each number pays: red means you lose money, green means you win.',
       'Every second station is ALL-IN: your whole balance is at stake.',
       'After each bet you walk to the next station. When your balance hits $0, the game is over.',
+      'Daily challenge: every player gets the same offers each day (the die is still random).',
       'Your highest balance is saved and you can share it on WhatsApp.',
     ],
   },
@@ -315,6 +381,7 @@ const HELP = {
       'אחר כך מוטלת קוביה. לכל מספר מ-1 עד 6 יש סיכוי שווה. ההצעה מראה כמה משלם כל מספר: אדום זה הפסד, ירוק זה רווח.',
       'כל תחנה שנייה היא ALL-IN: כל היתרה שלך על הכף.',
       'אחרי כל הימור הולכים לתחנה הבאה. כשהיתרה מגיעה ל-$0 המשחק נגמר.',
+      'אתגר יומי: כל השחקנים מקבלים את אותן הצעות באותו יום (הקוביה נשארת אקראית).',
       'היתרה הכי גבוהה שלך נשמרת, ואפשר לשתף אותה בוואטסאפ.',
     ],
   },
@@ -347,6 +414,7 @@ export function showPlayerSelect(onPick) {
     btn.classList.toggle('is-current', btn.dataset.player === current);
     btn.onclick = () => {
       savePlayer(btn.dataset.player);
+      preloadWalkFrames(btn.dataset.player);
       screen.hidden = true;
       if (onPick) onPick(btn.dataset.player);
     };
@@ -358,17 +426,54 @@ export function showPlayerSelect(onPick) {
 
 const FLOOR_BASE = 'rotateX(90deg) translateY(-3000px) translateZ(-240px)';
 
+const WALK_FRAMES = 10;
+const walkCache = {};
+
+/** Load (and cache) the 10 walk-cycle frames for 'he' or 'she'. */
+export function preloadWalkFrames(who) {
+  if (walkCache[who]) return walkCache[who];
+  const list = [];
+  for (let i = 0; i < WALK_FRAMES; i++) {
+    const img = new Image();
+    img.src = `assets/player/${who}_walk${i}.webp`;
+    list.push(img);
+  }
+  walkCache[who] = list;
+  return list;
+}
+
+// Walk-cycle tuning. One cycle = 2 steps = 10 frames.
+// Frame 0 = right foot contact, 2 = passing, 4 = left foot contact, 6 = passing.
+const WALK = {
+  duration: 2800,     // ms: exactly 2 full cycles (4 steps), was 1500
+  cycleMs: 1400,      // one full 2-step cycle = 0.7 s per step (was 1.0 s)
+  bobPx: 11,          // body rises at the passing poses, sinks at foot contact
+  swayPx: 6,          // side-to-side shift of the body
+  rollDeg: 1.1,       // slight lean toward the planted foot
+  endScale: 0.88,     // walker shrinks as it walks into the corridor
+  liftPx: 26,         // and its feet move up the screen
+  floorSpeed: 200,    // floor units/s: one floor stripe pair (120) per step, so planted feet do not skate
+};
+
 export function playWalkingTransition({ reducedMotion } = {}) {
   return new Promise((resolve) => {
     const overlay = el('walkOverlay');
     const skipBtn = el('skipWalkBtn');
-    const player = el('walkPlayer');
+    const actor = el('walkActor');
+    const imgA = el('walkImgA');
+    const imgB = el('walkImgB');
+    const shadow = document.querySelector('.walkShadow');
     const floor = el('walkFloor');
     const who = getPlayer() || 'he';
-    player.src = `assets/player/${who}_walkL.png`;
+    const frames = preloadWalkFrames(who);
+    const first = frames[0];
+    if (first.naturalWidth) actor.style.aspectRatio = `${first.naturalWidth} / ${first.naturalHeight}`;
+    imgA.src = frames[0].src;
+    imgB.src = frames[1].src;
+    imgB.style.opacity = '0';
     overlay.hidden = false;
 
-    const duration = reducedMotion ? 50 : 1500;
+    const duration = reducedMotion ? 50 : WALK.duration;
     let resolved = false;
     let raf = null;
 
@@ -388,18 +493,46 @@ export function playWalkingTransition({ reducedMotion } = {}) {
     }
 
     const start = performance.now();
+    const ease = (x) => x * x * (3 - 2 * x);
     const frame = (now) => {
-      const t = (now - start) / 1000;
-      if (t * 1000 >= duration) { finish(); return; }
-      const step = Math.floor(t * 3.2) % 2;
-      player.src = `assets/player/${who}_walk${step ? 'R' : 'L'}.png`;
-      const swing = Math.sin(t * 3.2 * Math.PI);
-      const bob = Math.abs(swing) * 14;
-      player.style.bottom = `${-20 + bob}px`;
-      player.style.transform = `translateX(-50%) rotate(${swing * 0.9}deg)`;
-      floor.style.transform = `translateZ(${t * 900}px) ${FLOOR_BASE}`;
+      const ms = Math.max(0, now - start);
+      if (ms >= duration) { finish(); return; }
+      const t = ms / 1000;
+      const u = ms / duration;               // 0..1 over the walk
+      const ramp = Math.min(1, ms / 350);    // gentle start: steps and bob build up
+      // phase in the cycle, 0..1 (starts on a foot contact)
+      const phase = (ms / WALK.cycleMs) % 1;
+      const pos = phase * WALK_FRAMES;
+      const i0 = Math.floor(pos) % WALK_FRAMES;
+      const i1 = (i0 + 1) % WALK_FRAMES;
+      const frac = pos - Math.floor(pos);
+      // two stacked layers, cross-fade between neighbouring frames
+      if (imgA.dataset.i !== String(i0)) { imgA.src = frames[i0].src; imgA.dataset.i = String(i0); }
+      if (imgB.dataset.i !== String(i1)) { imgB.src = frames[i1].src; imgB.dataset.i = String(i1); }
+      // hold each pose, then blend quickly into the next (less double-image ghosting at the slower pace)
+      const blend = Math.min(1, Math.max(0, (frac - 0.55) / 0.45));
+      imgB.style.opacity = String(blend * blend * (3 - 2 * blend));
+
+      // 2 steps per cycle: contact at phase 0 and 0.5 (lowest), passing at 0.25 and 0.75 (highest)
+      const lift = (1 - Math.cos(phase * 4 * Math.PI)) / 2;   // 0 at contact, 1 at passing
+      const bob = lift * WALK.bobPx * ramp;
+      const sway = Math.sin(phase * 2 * Math.PI) * WALK.swayPx * ramp;
+      const roll = Math.sin(phase * 2 * Math.PI) * WALK.rollDeg * ramp;
+      const depth = ease(u);
+      const scale = 1 - (1 - WALK.endScale) * depth;
+      const rise = WALK.liftPx * depth;
+      actor.style.transform =
+        `translateX(calc(-50% + ${sway.toFixed(2)}px)) translateY(${(-rise - bob).toFixed(2)}px) rotate(${roll.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
+
+      // shadow stays on the floor under the feet: wider and darker at contact, tighter when passing
+      const sw = (1 - 0.18 * lift) * scale;
+      shadow.style.transform = `translateX(-50%) translateY(${(-rise).toFixed(2)}px) scale(${sw.toFixed(3)}, ${(sw * (1 - 0.15 * lift)).toFixed(3)})`;
+      shadow.style.opacity = String(0.95 - 0.35 * lift);
+
+      const dist = WALK.floorSpeed * (t < 0.3 ? (t * t) / 0.6 : t - 0.15); // eases in over 0.3 s
+      floor.style.transform = `translateZ(${dist.toFixed(1)}px) ${FLOOR_BASE}`;
       document.querySelectorAll('.walkCurtain').forEach((c) => {
-        c.style.backgroundPositionX = `${t * -60}px`;
+        c.style.backgroundPositionX = `${t * -30}px`;
       });
       raf = requestAnimationFrame(frame);
     };
@@ -409,13 +542,59 @@ export function playWalkingTransition({ reducedMotion } = {}) {
 
 /* ---------------- GAME OVER ---------------- */
 
-export function showGameOver({ stationsSurvived, highestBalance, bestStation }) {
+function chartSvg(history) {
+  const W = 300, H = 110, pad = 6;
+  const max = Math.max(...history, 1000);
+  const useLog = max > 5000;
+  const f = (v) => (useLog ? Math.log10(Math.max(v, 1)) : v);
+  const lo = useLog ? 0 : 0;
+  const hi = f(max);
+  const n = history.length;
+  const x = (i) => pad + (n === 1 ? 0 : (i / (n - 1)) * (W - 2 * pad));
+  const y = (v) => H - pad - ((f(v) - lo) / (hi - lo || 1)) * (H - 2 * pad);
+  const pts = history.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const peakIdx = history.indexOf(Math.max(...history));
+  const startY = y(history[0]).toFixed(1);
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="Balance by station">` +
+    `<line x1="${pad}" x2="${W - pad}" y1="${startY}" y2="${startY}" class="chart__start"/>` +
+    `<polyline points="${pts}" class="chart__line"/>` +
+    `<circle cx="${x(peakIdx).toFixed(1)}" cy="${y(history[peakIdx]).toFixed(1)}" r="4" class="chart__peak"/>` +
+    `</svg>` +
+    `<div class="chart__axis"><span>Start $${history[0].toLocaleString('en-US')}</span><span>Peak ${formatUSD(history[peakIdx])} (station ${peakIdx})</span>` +
+    `<span>${useLog ? 'log scale' : ''}</span></div>`;
+}
+
+export function showGameOver({ stationsSurvived, highestBalance, bestStation, history, records, daily }) {
   const screen = el('gameOverScreen');
   el('goStations').textContent = String(stationsSurvived);
   el('goHighest').textContent = formatUSD(highestBalance);
   el('goBest').textContent = String(bestStation);
+  el('goChart').innerHTML = chartSvg(history || [1000]);
+
+  const runs = records.totalRuns;
+  const tracked = records.trackedRuns || 0;
+  const avgHigh = tracked ? Math.round(records.sumHighest / tracked) : null;
+  const avgSt = tracked ? (records.sumStations / tracked).toFixed(1) : null;
+  const row = (k, v) => `<div class="gameOver__stat"><span>${k}</span><strong>${v}</strong></div>`;
+  el('goAllStats').innerHTML =
+    row('Runs played', String(runs)) +
+    (avgHigh !== null ? row('Average highest balance', formatUSD(avgHigh)) : '') +
+    (avgSt !== null ? row('Average stations survived', avgSt) : '') +
+    row('All-time highest balance', formatUSD(records.highestBalance)) +
+    row('ALL-INs survived (total)', String(records.totalAllInSurvived));
+
+  const dailyEl = el('goDaily');
+  if (daily) {
+    dailyEl.hidden = false;
+    dailyEl.textContent = `Daily challenge ${daily.date}: this run ${formatUSD(highestBalance)} · today's best ${formatUSD(daily.best)} · plays today ${daily.plays}`;
+  } else {
+    dailyEl.hidden = true;
+  }
+
   const shown = Math.round(highestBalance).toLocaleString('en-US');
-  const msg = `שחקתי gamblerer והרווחתי *${shown}$* עד ההפסד.\nנסו גם אתם: https://gamblerer.vercel.app/`;
+  const msg = daily
+    ? `שחקתי באתגר היומי של gamblerer (${daily.date}) והרווחתי *${shown}$* עד ההפסד.\nאותן הצעות לכולם, נסו לנצח אותי: https://gamblerer.vercel.app/`
+    : `שחקתי gamblerer והרווחתי *${shown}$* עד ההפסד.\nנסו גם אתם: https://gamblerer.vercel.app/`;
   el('shareBtn').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
   screen.hidden = false;
 }

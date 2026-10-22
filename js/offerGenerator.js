@@ -31,6 +31,21 @@ function roundToTen(n) {
   return Math.max(10, Math.round(n / 10) * 10);
 }
 
+// Rare Jackpot 6-face multiplier. Was 9.5 (return ~1.67 per $1, far better than
+// every other offer). 6.0 gives return ~1.08, in line with the other bets.
+export const RARE_JACKPOT_MULT = 6.0;
+
+// Percent-of-balance cost scaling: from this station on, each ordinary offer
+// costs at least this share of the current balance (cost and payouts scale
+// together, so odds and ratios stay identical). Only bites on lucky runs.
+export const PCT_SCALING_FROM_STATION = 5;
+export const PCT_OF_BALANCE = {
+  Conservative: 0.08,
+  Balanced: 0.12,
+  'High-Risk': 0.16,
+  'Rare Jackpot': 0.20,
+};
+
 const ORDINARY_TEMPLATES = [
   // Conservative: small, frequent, modest upside
   (station, balance) => {
@@ -95,7 +110,7 @@ const ORDINARY_TEMPLATES = [
         3: roundToTen(cost * 0.1),
         4: roundToTen(cost * 0.1),
         5: roundToTen(cost * 0.1),
-        6: roundToTen(cost * 9.5),
+        6: roundToTen(cost * RARE_JACKPOT_MULT),
       },
       label: 'Rare Jackpot',
     };
@@ -161,8 +176,21 @@ function fitOfferToBalance(cost, payouts, balance) {
   return { cost: balance, payouts: scaledPayouts };
 }
 
+function scaleUpForBalance(raw, station, balance) {
+  const pct = PCT_OF_BALANCE[raw.label];
+  if (station < PCT_SCALING_FROM_STATION || !pct) return raw;
+  const target = Math.round(balance * pct);
+  if (target <= raw.cost) return raw;
+  const factor = target / raw.cost;
+  const payouts = {};
+  for (const [face, amount] of Object.entries(raw.payouts)) {
+    payouts[face] = Math.round(amount * factor);
+  }
+  return { ...raw, cost: target, payouts };
+}
+
 function buildOrdinaryOffer(station, balance, character, colorId, templateFn) {
-  const raw = templateFn(station, balance);
+  const raw = scaleUpForBalance(templateFn(station, balance), station, balance);
   const { cost, payouts } = fitOfferToBalance(raw.cost, raw.payouts, balance);
   const label = raw.label;
   return {
@@ -188,22 +216,41 @@ function buildAllInOffer(balance, character, colorId, template) {
   };
 }
 
+/** Small seeded PRNG (mulberry32) used ONLY for offers in the daily challenge. */
+export function makeSeededRng(seedString) {
+  let h = 1779033703 ^ seedString.length;
+  for (let i = 0; i < seedString.length; i++) {
+    h = Math.imul(h ^ seedString.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = Math.imul(h ^ (h >>> 16), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909);
+  a >>>= 0;
+  return function () {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /**
  * Generate the two offers for a station.
  * @param {number} stationNumber 1-based station index
  * @param {boolean} isAllIn whether this is an ALL-IN station
  * @param {number} balance current player balance
+ * @param {function} rng random source for offers only (never used for the die)
  */
-export function generateStationOffers(stationNumber, isAllIn, balance) {
-  const [slotA, slotB] = pickTwoDistinctCharacterOffers();
+export function generateStationOffers(stationNumber, isAllIn, balance, rng = Math.random) {
+  const [slotA, slotB] = pickTwoDistinctCharacterOffers(rng);
 
   if (isAllIn) {
     const pair =
       ALL_IN_TEMPLATE_PAIRS[
-        Math.floor(Math.random() * ALL_IN_TEMPLATE_PAIRS.length)
+        Math.floor(rng() * ALL_IN_TEMPLATE_PAIRS.length)
       ];
     // Randomize which offer goes on which side
-    const [tA, tB] = Math.random() < 0.5 ? pair : [pair[1], pair[0]];
+    const [tA, tB] = rng() < 0.5 ? pair : [pair[1], pair[0]];
     return [
       buildAllInOffer(balance, slotA.character, slotA.colorId, tA),
       buildAllInOffer(balance, slotB.character, slotB.colorId, tB),
@@ -211,8 +258,8 @@ export function generateStationOffers(stationNumber, isAllIn, balance) {
   }
 
   // Pick two different ordinary templates for visibly different profiles
-  const idxA = Math.floor(Math.random() * ORDINARY_TEMPLATES.length);
-  let idxB = Math.floor(Math.random() * ORDINARY_TEMPLATES.length);
+  const idxA = Math.floor(rng() * ORDINARY_TEMPLATES.length);
+  let idxB = Math.floor(rng() * ORDINARY_TEMPLATES.length);
   if (idxB === idxA) idxB = (idxB + 1) % ORDINARY_TEMPLATES.length;
 
   return [

@@ -258,10 +258,10 @@ button { font-family: var(--sans); cursor: pointer; border: none; background: no
 /* ---------------- GAME OVER ---------------- */
 
 .gameOver {
-  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; overflow-y: auto;
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto;
   background: radial-gradient(ellipse at 50% 0%, #5a1220 0%, #2a0912 45%, #0d0408 100%);
 }
-.gameOver__panel { width: 100%; max-width: 440px; padding: 24px; text-align: center; }
+.gameOver__panel { margin: auto 0; width: 100%; max-width: 440px; padding: 24px; text-align: center; }
 .gameOver__title { margin: 0; font-size: 44px; letter-spacing: 5px; color: var(--red); text-shadow: 0 0 24px var(--red-deep); }
 .gameOver__sub { font-style: italic; color: var(--gold-dim); margin: 6px 0 18px; }
 .gameOver__stats { border-top: 1px solid rgba(229,193,88,.35); border-bottom: 1px solid rgba(229,193,88,.35); padding: 8px 0; font: 14px var(--sans); }
@@ -293,3 +293,44 @@ button { font-family: var(--sans); cursor: pointer; border: none; background: no
 .helpPanel__body { text-align: start; font: 15px/1.5 var(--sans); }
 .helpPanel__body p { margin: 10px 0; }
 .helpClose { display: block; margin: 12px auto 0; font: bold 13px var(--sans); letter-spacing: 2px; padding: 11px 26px; border-radius: 10px; border: 0; color: var(--velvet); background: linear-gradient(#f7e3a0, #d2a944); box-shadow: 0 3px 0 #8a6a1c; cursor: pointer; }
+
+/* ---------------- v2: risk line, face strip, balance flash, chart, daily ---------------- */
+.offerCard__risk { margin: 0 0 6px; font: 11px var(--sans); color: #d9c9a0; text-align: center; }
+.offerCard__outcomes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.faceCell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 3px 0; border-radius: 6px; background: rgba(0,0,0,.4); border: 1px solid currentColor;
+  font: bold 11px var(--sans); min-width: 0; line-height: 1.2;
+}
+.faceCell.win { color: var(--green); }
+.faceCell.lose { color: #ff7a6e; }
+.faceCell.even { color: var(--gold-soft); }
+.faceCell__n { font-size: 9px; opacity: .8; }
+.faceCell__v { font-size: 12px; white-space: nowrap; }
+
+@keyframes flashUp { 0% { color: var(--green); text-shadow: 0 0 22px var(--green); transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes flashDown { 0% { color: var(--red); text-shadow: 0 0 22px var(--red); transform: scale(1.18); } 100% { transform: scale(1); } }
+.topbar__value.flash-up { animation: flashUp .9s var(--ease); display: inline-block; }
+.topbar__value.flash-down { animation: flashDown .9s var(--ease); display: inline-block; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 15% { transform: translateX(-12px); } 30% { transform: translateX(10px); } 45% { transform: translateX(-8px); } 60% { transform: translateX(6px); } 80% { transform: translateX(-3px); } }
+#app.shake { animation: shake .6s linear; }
+
+.modeRow { display: flex; justify-content: center; margin: 0 0 6px; }
+.modeRow[hidden] { display: none; }
+.modeBtn { font: bold 10px var(--sans); letter-spacing: 1px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--gold-dim); color: var(--gold-soft); background: rgba(0,0,0,.35); cursor: pointer; }
+
+.gameOver__chartWrap { margin: 14px 0 12px; }
+.gameOver__chartTitle { font: 10px var(--sans); letter-spacing: 3px; color: var(--gold-dim); margin-bottom: 4px; }
+.chart { width: 100%; height: auto; background: rgba(0,0,0,.35); border-radius: 10px; }
+.chart__line { fill: none; stroke: var(--gold-soft); stroke-width: 2; stroke-linejoin: round; }
+.chart__start { stroke: var(--gold-dim); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart__peak { fill: var(--green); }
+.chart__axis { display: flex; justify-content: space-between; gap: 6px; font: 10px var(--sans); color: var(--gold-dim); margin-top: 3px; }
+.gameOver__stats--all { margin-top: 10px; }
+.gameOver__stats--all .gameOver__stat strong { font-size: 14px; }
+.gameOver__daily { font: 12px var(--sans); color: var(--gold-soft); margin: 10px 0 0; }
+.playDailyBtn { display: block; width: 100%; margin-top: 10px; padding: 12px; border-radius: 10px; font: bold 12px var(--sans); letter-spacing: 2px; color: var(--gold-soft); background: transparent; border: 1.5px solid var(--gold-dim); cursor: pointer; }
+
+/* ---------------- v3: 10-frame walk cycle ---------------- */
+.walkActor { position: absolute; left: 50%; bottom: -20px; height: 72%; aspect-ratio: 407 / 1100; transform: translateX(-50%); transform-origin: 50% 100%; will-change: transform; }
+.walkActor img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 8px #000); }

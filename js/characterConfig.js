@@ -129,27 +129,31 @@ export function getColorById(id) {
   return COLOR_PALETTE.find((c) => c.id === id) || COLOR_PALETTE[0];
 }
 
-export function randomColorId() {
-  return COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)].id;
+export function randomColorId(rng = Math.random) {
+  return COLOR_PALETTE[Math.floor(rng() * COLOR_PALETTE.length)].id;
 }
 
 /**
  * Pick two distinct characters, each with an independently random color,
  * while avoiding generating the exact same character+color combo twice.
  */
-export function pickTwoDistinctCharacterOffers() {
-  const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
+export function pickTwoDistinctCharacterOffers(rng = Math.random) {
+  const shuffled = [...CHARACTERS];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   const charA = shuffled[0];
   const charB = shuffled[1];
 
-  let colorA = randomColorId();
-  let colorB = randomColorId();
+  let colorA = randomColorId(rng);
+  let colorB = randomColorId(rng);
 
   // characters already differ, but guard the (char,color) pair anyway
   // in case future configs allow repeated character slots.
   let guard = 0;
   while (charA.id === charB.id && colorA === colorB && guard < 10) {
-    colorB = randomColorId();
+    colorB = randomColorId(rng);
     guard++;
   }
 

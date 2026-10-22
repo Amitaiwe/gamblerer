@@ -9,6 +9,7 @@
 import {
   generateStationOffers,
   isAllInStation,
+  makeSeededRng,
 } from './offerGenerator.js';
 import {
   applyOrdinaryBet,
@@ -19,7 +20,20 @@ import { loadRecords } from './records.js';
 
 const STARTING_BALANCE = 1000;
 
-export function createInitialState() {
+/** Today's date key (UTC), the same for every player in the world. */
+export function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Offers for a station. In daily mode the offer picks come from a seeded
+ *  random stream (seed = date + station). The die never uses it. */
+function offersFor(station, isAllIn, balance, mode, dateKey) {
+  const rng = mode === 'daily' ? makeSeededRng(`${dateKey}#${station}`) : Math.random;
+  return generateStationOffers(station, isAllIn, balance, rng);
+}
+
+export function createInitialState(mode = 'free') {
+  const dateKey = todayKey();
   const records = loadRecords();
   const station = 1;
   const balance = STARTING_BALANCE;
@@ -29,7 +43,10 @@ export function createInitialState() {
     highestBalanceThisRun: balance,
     allInSurvivedThisRun: 0,
     isAllIn: isAllInStation(station),
-    offers: generateStationOffers(station, isAllInStation(station), balance),
+    mode,
+    dateKey,
+    history: [balance],
+    offers: offersFor(station, isAllInStation(station), balance, mode, dateKey),
     selectedOfferId: null,
     lastRollResult: null,
     lastOutcome: null, // { payout, netChange, newBalance, won }
@@ -66,6 +83,7 @@ export function resolveSelectedOffer(state, rollResult) {
     ...state,
     balance: newBalance,
     highestBalanceThisRun: Math.max(state.highestBalanceThisRun, newBalance),
+    history: [...state.history, newBalance],
     allInSurvivedThisRun:
       state.allInSurvivedThisRun + (state.isAllIn && !gameOver ? 1 : 0),
     lastRollResult: rollResult,
@@ -92,7 +110,7 @@ export function advanceStation(state) {
     ...state,
     station: nextStation,
     isAllIn: nextIsAllIn,
-    offers: generateStationOffers(nextStation, nextIsAllIn, state.balance),
+    offers: offersFor(nextStation, nextIsAllIn, state.balance, state.mode, state.dateKey),
     selectedOfferId: null,
     lastRollResult: null,
     lastOutcome: null,

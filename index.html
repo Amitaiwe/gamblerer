@@ -35,6 +35,9 @@
   <div class="progress" id="progressArea">
     <span class="progress__badge" id="stationBadge">ORDINARY BET</span>
   </div>
+  <div class="modeRow" id="modeRow" hidden>
+    <button class="modeBtn" id="modeBtn"></button>
+  </div>
 
   <!-- MAIN GAME VIEW -->
   <main class="gameView" id="gameView">
@@ -78,7 +81,7 @@
       <div class="walkCurtain walkCurtain--r"></div>
       <div class="walkFloor" id="walkFloor"></div>
       <div class="walkShadow"></div>
-      <img class="walkPlayer" id="walkPlayer" alt="" />
+      <div class="walkActor" id="walkActor"><img id="walkImgA" alt="" /><img id="walkImgB" alt="" /></div>
       <div class="walkVignette"></div>
       <div class="walkCaption" id="walkCaption">WALKING TO NEXT STATION</div>
     </div>
@@ -134,8 +137,15 @@
           <strong id="goBest">0</strong>
         </div>
       </div>
+      <div class="gameOver__chartWrap">
+        <div class="gameOver__chartTitle">BALANCE BY STATION</div>
+        <div id="goChart"></div>
+      </div>
+      <div class="gameOver__stats gameOver__stats--all" id="goAllStats"></div>
+      <p class="gameOver__daily" id="goDaily" hidden></p>
       <a class="shareBtn" id="shareBtn" href="https://wa.me/" target="_blank" rel="noopener">SHARE ON WHATSAPP</a>
       <button class="playAgainBtn" id="playAgainBtn">PLAY AGAIN</button>
+      <button class="playDailyBtn" id="playDailyBtn">PLAY TODAY'S DAILY CHALLENGE</button>
     </div>
   </div>
 
@@ -152,6 +162,7 @@
       <span>Bet</span>
       <strong class="offerCard__costValue"></strong>
     </div>
+    <p class="offerCard__risk"></p>
     <ul class="offerCard__outcomes"></ul>
     <button class="offerCard__select">SELECT</button>
   </article>

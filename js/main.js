@@ -15,7 +15,7 @@ import {
   stationsSurvived,
 } from './gameState.js';
 import { rollDie } from './diceLogic.js';
-import { finalizeRun, loadRecords } from './records.js';
+import { finalizeRun, loadRecords, saveDailyResult } from './records.js';
 import { CHARACTERS, COLOR_PALETTE } from './characterConfig.js';
 import { Sound } from './sound.js';
 import {
@@ -35,6 +35,10 @@ import {
   showGameOver,
   hideGameOver,
   renderSoundIcon,
+  shakeScreen,
+  resetBalanceDisplay,
+  onModeClick,
+  preloadWalkFrames,
   prewarmAllCharacterArt,
 } from './ui.js';
 
@@ -90,6 +94,8 @@ function runDiceSequence() {
       await wait(RESULT_PAUSE_MS);
 
       if (state.gameOver) {
+        shakeScreen();
+        await wait(prefersReducedMotion ? 0 : 700);
         await handleGameOver();
         resolve();
         return;
@@ -118,17 +124,28 @@ async function handleGameOver() {
     allInSurvivedThisRun: state.allInSurvivedThisRun,
   });
 
+  const daily = state.mode === 'daily'
+    ? saveDailyResult(state.dateKey, state.highestBalanceThisRun)
+    : null;
   showGameOver({
     stationsSurvived: survived,
     highestBalance: state.highestBalanceThisRun,
     bestStation: records.bestStation,
+    history: state.history,
+    records,
+    daily,
   });
 }
 
-function restartGame() {
+function startRun(mode) {
   hideGameOver();
-  state = createInitialState();
+  state = createInitialState(mode);
+  resetBalanceDisplay(state.balance);
   render();
+}
+
+function restartGame() {
+  startRun(state.mode);
 }
 
 function initSoundToggle() {
@@ -141,9 +158,12 @@ function initSoundToggle() {
 
 function init() {
   document.getElementById('playAgainBtn').addEventListener('click', restartGame);
+  document.getElementById('playDailyBtn').addEventListener('click', () => startRun('daily'));
+  onModeClick(() => startRun(state.mode === 'daily' ? 'free' : 'daily'));
   initSoundToggle();
   document.getElementById('playerBtn').addEventListener('click', () => showPlayerSelect());
   if (!getPlayer()) showPlayerSelect();
+  else preloadWalkFrames(getPlayer());
   render();
   // Warm the recolor cache in the background so later cards render instantly.
   prewarmAllCharacterArt(CHARACTERS, COLOR_PALETTE);
