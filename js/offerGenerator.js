@@ -142,10 +142,29 @@ const ALL_IN_TEMPLATE_PAIRS = [
       payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1.1, 6: 3.6 },
     },
   ],
+
 ];
 
+/**
+ * Scale an ordinary offer down so its cost never exceeds the current balance.
+ * Cost and all payouts are scaled by the same factor, so the offer's risk
+ * profile (payout ratios, displayed odds) is unchanged - only the stake
+ * size shrinks to fit what the player can pay.
+ */
+function fitOfferToBalance(cost, payouts, balance) {
+  if (cost <= balance) return { cost, payouts };
+  const factor = balance / cost;
+  const scaledPayouts = {};
+  for (const [face, amount] of Object.entries(payouts)) {
+    scaledPayouts[face] = Math.round(amount * factor);
+  }
+  return { cost: balance, payouts: scaledPayouts };
+}
+
 function buildOrdinaryOffer(station, balance, character, colorId, templateFn) {
-  const { cost, payouts, label } = templateFn(station, balance);
+  const raw = templateFn(station, balance);
+  const { cost, payouts } = fitOfferToBalance(raw.cost, raw.payouts, balance);
+  const label = raw.label;
   return {
     id: nextOfferId(),
     kind: 'ordinary',
