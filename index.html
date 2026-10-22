@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>GAMBLERER</title>
+<meta name="description" content="GAMBLERER — an endless gambling survival game. Virtual money only." />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar__stat">
+      <span class="topbar__label">Balance</span>
+      <span class="topbar__value topbar__value--gold" id="statBalance">$1,000</span>
+    </div>
+    <div class="topbar__stat">
+      <span class="topbar__label">Station</span>
+      <span class="topbar__value" id="statStation">1</span>
+    </div>
+    <div class="topbar__stat">
+      <span class="topbar__label">Best</span>
+      <span class="topbar__value" id="statBest">0</span>
+    </div>
+    <button class="soundToggle" id="soundToggle" aria-label="Toggle sound" title="Toggle sound">
+      <span id="soundIcon">🔊</span>
+    </button>
+  </header>
+
+  <!-- PROGRESS AREA -->
+  <div class="progress" id="progressArea">
+    <span class="progress__badge" id="stationBadge">ORDINARY BET</span>
+  </div>
+
+  <!-- MAIN GAME VIEW -->
+  <main class="gameView" id="gameView">
+
+    <!-- CENTER: OFFER CARDS -->
+    <section class="offers" id="offersArea" aria-live="polite">
+      <!-- offer cards injected by ui.js -->
+    </section>
+
+    <!-- DICE AREA -->
+    <section class="diceArea" id="diceArea">
+      <div class="die" id="die" aria-hidden="true">
+        <div class="die__face" id="dieFace">?</div>
+      </div>
+      <p class="diceArea__hint" id="diceHint">Choose an offer to roll the dice</p>
+    </section>
+
+    <!-- RESULT AREA -->
+    <section class="result" id="resultArea" hidden>
+      <div class="result__banner" id="resultBanner">WIN</div>
+      <div class="result__row">
+        <span>Payout</span>
+        <strong id="resultPayout">$0</strong>
+      </div>
+      <div class="result__row">
+        <span>Net Change</span>
+        <strong id="resultNet">$0</strong>
+      </div>
+      <div class="result__row">
+        <span>New Balance</span>
+        <strong id="resultBalance">$0</strong>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- WALKING TRANSITION OVERLAY -->
+  <div class="walkOverlay" id="walkOverlay" hidden>
+    <div class="walkOverlay__scene" id="walkScene">
+      <div class="walkOverlay__bg"></div>
+      <div class="walkOverlay__player" id="walkPlayer">
+        <div class="playerSilhouette">
+          <div class="playerSilhouette__head"></div>
+          <div class="playerSilhouette__body"></div>
+          <div class="playerSilhouette__legL"></div>
+          <div class="playerSilhouette__legR"></div>
+        </div>
+      </div>
+    </div>
+    <button class="skipBtn" id="skipWalkBtn">Skip ▶</button>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div class="gameOver" id="gameOverScreen" hidden>
+    <div class="gameOver__panel">
+      <h1 class="gameOver__title">GAME OVER</h1>
+      <p class="gameOver__sub">The house always collects.</p>
+      <div class="gameOver__stats">
+        <div class="gameOver__stat">
+          <span>Stations Survived</span>
+          <strong id="goStations">0</strong>
+        </div>
+        <div class="gameOver__stat">
+          <span>Highest Balance</span>
+          <strong id="goHighest">$0</strong>
+        </div>
+        <div class="gameOver__stat">
+          <span>Best Station Record</span>
+          <strong id="goBest">0</strong>
+        </div>
+      </div>
+      <button class="playAgainBtn" id="playAgainBtn">PLAY AGAIN</button>
+    </div>
+  </div>
+
+</div>
+
+<template id="offerCardTemplate">
+  <article class="offerCard">
+    <div class="offerCard__art">
+      <img class="offerCard__img" alt="" />
+    </div>
+    <h2 class="offerCard__name"></h2>
+    <p class="offerCard__label"></p>
+    <div class="offerCard__cost">
+      <span>Bet</span>
+      <strong class="offerCard__costValue"></strong>
+    </div>
+    <ul class="offerCard__outcomes"></ul>
+    <button class="offerCard__select">SELECT</button>
+  </article>
+</template>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
