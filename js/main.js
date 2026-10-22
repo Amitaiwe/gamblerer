@@ -23,6 +23,11 @@ import {
   renderOffers,
   setDieRolling,
   setDieFace,
+  playDieRoll,
+  showRollStage,
+  hideRollStage,
+  getPlayer,
+  showPlayerSelect,
   setDiceHint,
   renderResult,
   hideResult,
@@ -38,13 +43,13 @@ let state = createInitialState();
 const prefersReducedMotion =
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const ROLL_ANIMATION_MS = prefersReducedMotion ? 150 : 1300;
 const RESULT_PAUSE_MS = prefersReducedMotion ? 150 : 1100;
 
 function render() {
   renderTopBar(state);
   renderOffers(state, handleSelectOffer);
   hideResult();
+  hideRollStage();
   setDiceHint(state.isAllIn ? 'ALL-IN — choose wisely' : 'Choose an offer to roll the dice');
   setDieFace(null);
 }
@@ -67,16 +72,10 @@ function runDiceSequence() {
 
     setDieRolling(true);
     setDiceHint('Rolling...');
+    showRollStage();
 
-    const tickInterval = 90;
-    const tickTimer = window.setInterval(() => {
-      const randomFace = 1 + Math.floor(Math.random() * 6);
-      setDieFace(randomFace);
-      Sound.diceRollTick();
-    }, tickInterval);
-
-    window.setTimeout(async () => {
-      window.clearInterval(tickTimer);
+    // The animation only displays actualResult (about 3 s, tap to skip).
+    playDieRoll(actualResult, { reducedMotion: prefersReducedMotion }).then(async () => {
       setDieRolling(false);
       setDieFace(actualResult);
       setDiceHint(`Result: ${actualResult}`);
@@ -102,7 +101,7 @@ function runDiceSequence() {
       state = advanceStation(state);
       render();
       resolve();
-    }, ROLL_ANIMATION_MS);
+    });
   });
 }
 
@@ -143,6 +142,8 @@ function initSoundToggle() {
 function init() {
   document.getElementById('playAgainBtn').addEventListener('click', restartGame);
   initSoundToggle();
+  document.getElementById('playerBtn').addEventListener('click', () => showPlayerSelect());
+  if (!getPlayer()) showPlayerSelect();
   render();
   // Warm the recolor cache in the background so later cards render instantly.
   prewarmAllCharacterArt(CHARACTERS, COLOR_PALETTE);
