@@ -445,14 +445,14 @@ export function preloadWalkFrames(who) {
 // Walk-cycle tuning. One cycle = 2 steps = 10 frames.
 // Frame 0 = right foot contact, 2 = passing, 4 = left foot contact, 6 = passing.
 const WALK = {
-  duration: 2800,     // ms: exactly 2 full cycles (4 steps), was 1500
-  cycleMs: 1400,      // one full 2-step cycle = 0.7 s per step (was 1.0 s)
+  duration: 1700,     // ms: 2 full cycles (4 steps); was 2800
+  cycleMs: 850,       // one full 2-step cycle (was 1400)
   bobPx: 11,          // body rises at the passing poses, sinks at foot contact
   swayPx: 6,          // side-to-side shift of the body
   rollDeg: 1.1,       // slight lean toward the planted foot
   endScale: 0.88,     // walker shrinks as it walks into the corridor
   liftPx: 26,         // and its feet move up the screen
-  floorSpeed: 200,    // floor units/s: one floor stripe pair (120) per step, so planted feet do not skate
+  floorSpeed: 330,    // floor units/s: one floor stripe pair (120) per step, so planted feet do not skate
 };
 
 export function playWalkingTransition({ reducedMotion } = {}) {
