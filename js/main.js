@@ -86,6 +86,7 @@ function runDiceSequence() {
           : `${roll.dieA} vs ${roll.dieB} - ${roll.result} counts`
       );
 
+      const balanceBefore = state.balance;
       state = resolveSelectedOffer(state, roll);
       const outcome = state.lastOutcome;
 
@@ -104,7 +105,7 @@ function runDiceSequence() {
       }
 
       Sound.walking();
-      await playWalkingTransition({ reducedMotion: prefersReducedMotion });
+      await playWalkingTransition({ reducedMotion: prefersReducedMotion, balanceFrom: balanceBefore, balanceTo: state.lastOutcome.newBalance });
 
       state = advanceStation(state);
       render();

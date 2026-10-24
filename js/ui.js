@@ -210,7 +210,7 @@ const FACE_TRANSFORM = {
 // Cube rotation [x, y] that brings face N to the front.
 const FACE_FINAL = { 1: [0, 0], 6: [0, 180], 3: [0, -90], 4: [0, 90], 2: [-90, 0], 5: [90, 0] };
 
-const ROLL_SECONDS = 3;
+const ROLL_SECONDS = 1.15;
 const dieState = {}; // sceneId -> { built, raf }
 
 function dieParts(sceneId) {
@@ -318,6 +318,7 @@ function playOneDie(sceneId, face, { reducedMotion, mirror, registerFinish, seco
       return;
     }
     const start = performance.now();
+    const hopT = Math.min(0.7, seconds * 0.55);
     const frame = (now) => {
       const t = (now - start) / 1000;
       if (t >= seconds) { finish(); return; }
@@ -329,10 +330,10 @@ function playOneDie(sceneId, face, { reducedMotion, mirror, registerFinish, seco
       const ry = fin[1] + (1 - e) * 1100 * mirror;
       const rz = (1 - e) * 200 * mirror;
       let lift = 0;
-      if (t < 0.7) {
-        lift = Math.sin(Math.PI * t / 0.7) * 120;
+      if (t < hopT) {
+        lift = Math.sin(Math.PI * t / hopT) * 120;
       } else if (t < seconds - 0.25) {
-        const bt = t - 0.7;
+        const bt = t - hopT;
         const amp = 60 * Math.pow(0.35, Math.floor(bt / 0.45));
         lift = Math.sin(Math.PI * ((bt % 0.45) / 0.45)) * amp;
       }
@@ -370,8 +371,8 @@ export function playDiceRoll(roll, { reducedMotion } = {}) {
   // independent of the rolled values; the second die lands exactly 0.5s later.
   // This is display-only timing - it never influences the result.
   const leftFirst = Math.random() < 0.5;
-  const secondsA = leftFirst ? ROLL_SECONDS : ROLL_SECONDS + 0.5;
-  const secondsB = leftFirst ? ROLL_SECONDS + 0.5 : ROLL_SECONDS;
+  const secondsA = leftFirst ? ROLL_SECONDS : ROLL_SECONDS + 0.25;
+  const secondsB = leftFirst ? ROLL_SECONDS + 0.25 : ROLL_SECONDS;
   return Promise.all([
     playOneDie('die', roll.dieA, { reducedMotion, mirror: 1, registerFinish, seconds: secondsA }),
     playOneDie('die2', roll.dieB, { reducedMotion, mirror: -1, registerFinish, seconds: secondsB }),
@@ -519,8 +520,19 @@ const WALK = {
   floorSpeed: 330,    // floor units/s: one floor stripe pair (120) per step, so planted feet do not skate
 };
 
-export function playWalkingTransition({ reducedMotion } = {}) {
+export function playWalkingTransition({ reducedMotion, balanceFrom, balanceTo } = {}) {
   return new Promise((resolve) => {
+    const balEl = el('walkBalance');
+    const balVal = el('walkBalanceValue');
+    const showBal = typeof balanceFrom === 'number' && typeof balanceTo === 'number' && balanceFrom !== balanceTo;
+    if (showBal) {
+      balEl.hidden = false;
+      balVal.classList.toggle('is-up', balanceTo > balanceFrom);
+      balVal.classList.toggle('is-down', balanceTo < balanceFrom);
+      balVal.textContent = formatUSD(balanceFrom);
+    } else {
+      balEl.hidden = true;
+    }
     const overlay = el('walkOverlay');
     const skipBtn = el('skipWalkBtn');
     const actor = el('walkActor');
@@ -546,6 +558,7 @@ export function playWalkingTransition({ reducedMotion } = {}) {
       resolved = true;
       if (raf) cancelAnimationFrame(raf);
       overlay.hidden = true;
+      balEl.hidden = true;
       skipBtn.removeEventListener('click', finish);
       resolve();
     };
@@ -598,6 +611,12 @@ export function playWalkingTransition({ reducedMotion } = {}) {
       document.querySelectorAll('.walkCurtain').forEach((c) => {
         c.style.backgroundPositionX = `${t * -30}px`;
       });
+      if (showBal) {
+        const cStart = 350, cDur = 850;
+        const cu = Math.min(1, Math.max(0, (ms - cStart) / cDur));
+        const ce = 1 - Math.pow(1 - cu, 3);
+        balVal.textContent = formatUSD(Math.round(balanceFrom + (balanceTo - balanceFrom) * ce));
+      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
