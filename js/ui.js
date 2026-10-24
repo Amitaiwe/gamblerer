@@ -10,6 +10,7 @@
 import { getCharacterById, getColorById } from './characterConfig.js';
 import { RESULT_PROBS, summarizeRisk } from './diceLogic.js';
 import { getRecoloredImage, prewarmRecolor } from './recolor.js';
+import { getLang, t, charName, offerLabel } from './i18n.js';
 
 export function formatUSD(amount) {
   const sign = amount < 0 ? '-' : '';
@@ -72,12 +73,12 @@ export function renderTopBar(state) {
   el('statBest').textContent = String(state.bestStation);
 
   const badge = el('stationBadge');
-  const daily = state.mode === 'daily' ? 'DAILY · ' : '';
+  const daily = state.mode === 'daily' ? t('dailyPrefix') : '';
   if (state.isAllIn) {
-    badge.textContent = daily + 'ALL-IN STATION';
+    badge.textContent = daily + t('allInStation');
     badge.classList.add('is-allin');
   } else {
-    badge.textContent = daily + 'ORDINARY BET';
+    badge.textContent = daily + t('ordinaryBet');
     badge.classList.remove('is-allin');
   }
 
@@ -86,8 +87,8 @@ export function renderTopBar(state) {
   row.hidden = !(state.station === 1 && !state.locked);
   el('modeBtn').textContent =
     state.mode === 'daily'
-      ? `DAILY CHALLENGE ${state.dateKey} · tap for FREE PLAY`
-      : 'FREE PLAY · tap for DAILY CHALLENGE';
+      ? `${t('dailyChallenge')} ${state.dateKey} · ${t('tapForFreePlay')}`
+      : `${t('freePlay')} · ${t('tapForDaily')}`;
 }
 
 export function onModeClick(handler) {
@@ -117,7 +118,7 @@ function faceNets(offer, isAllIn) {
 }
 
 function faceLabel(net, isAllIn) {
-  if (isAllIn) return net <= -1 ? 'BUST' : `${net >= 0 ? '+' : '-'}${Math.abs(Math.round(net * 100))}%`;
+  if (isAllIn) return net <= -1 ? t('bust') : `${net >= 0 ? '+' : '-'}${Math.abs(Math.round(net * 100))}%`;
   return compactMoney(net);
 }
 
@@ -172,15 +173,15 @@ export function renderOffers(state, onSelect) {
       card.classList.add('is-selected');
     }
 
-    name.textContent = character ? character.name : offer.characterId;
-    label.textContent = offer.label || (state.isAllIn ? 'ALL-IN' : 'Ordinary Bet');
+    name.textContent = character ? charName(character.name) : offer.characterId;
+    label.textContent = offerLabel(offer.label || (state.isAllIn ? 'ALL-IN' : 'Ordinary Bet'));
     costValue.textContent = formatUSD(offer.cost);
 
     const risk = riskSummary(offer, state.isAllIn);
     const riskEl = node.querySelector('.offerCard__risk');
     riskEl.innerHTML =
-      `Profit chance <b class="net-positive">${risk.profitPct}%</b>` +
-      ` · Loss <b class="net-negative">${risk.lossPct}%</b>`;
+      `${t('profitChance')} <b class="net-positive">${risk.profitPct}%</b>` +
+      ` · ${t('lossWord')} <b class="net-negative">${risk.lossPct}%</b>`;
 
     const nets = faceNets(offer, state.isAllIn);
     nets.forEach((net, i) => {
@@ -191,6 +192,8 @@ export function renderOffers(state, onSelect) {
       outcomesList.appendChild(li);
     });
 
+    selectBtn.textContent = t('select');
+    node.querySelector('.offerCard__cost span').textContent = t('bet');
     selectBtn.disabled = state.locked;
     selectBtn.addEventListener('click', () => onSelect(offer.id));
 
@@ -261,7 +264,7 @@ export function hideRollStage() {
 export function setDieRolling(isRolling) {
   const hint = el('diceHint');
   el('skipRollBtn').hidden = !isRolling;
-  if (isRolling) hint.textContent = 'Rolling...';
+  if (isRolling) hint.textContent = t('rolling');
 }
 
 /** Highlight the die that counts (both on a double), dim the other. */
@@ -392,7 +395,7 @@ export function renderResult(outcome) {
   const area = el('resultArea');
   const banner = el('resultBanner');
   area.hidden = false;
-  banner.textContent = outcome.won ? 'YOU WON' : 'YOU LOST';
+  banner.textContent = outcome.won ? t('youWon') : t('youLost');
   banner.classList.toggle('is-loss', !outcome.won);
   el('resultPayout').textContent = formatUSD(outcome.payout);
   el('resultNet').textContent =
@@ -449,7 +452,7 @@ const HELP = {
     ],
   },
 };
-let helpLang = 'en';
+let helpLang = getLang();
 function renderHelp() {
   const h = HELP[helpLang];
   const panel = el('helpPanel');
@@ -643,8 +646,8 @@ function chartSvg(history) {
     `<polyline points="${pts}" class="chart__line"/>` +
     `<circle cx="${x(peakIdx).toFixed(1)}" cy="${y(history[peakIdx]).toFixed(1)}" r="4" class="chart__peak"/>` +
     `</svg>` +
-    `<div class="chart__axis"><span>Start $${history[0].toLocaleString('en-US')}</span><span>Peak ${formatUSD(history[peakIdx])} (station ${peakIdx})</span>` +
-    `<span>${useLog ? 'log scale' : ''}</span></div>`;
+    `<div class="chart__axis"><span>${t('startWord')} $${history[0].toLocaleString('en-US')}</span><span>${t('peakWord')} ${formatUSD(history[peakIdx])} (${t('stationWord')} ${peakIdx})</span>` +
+    `<span>${useLog ? t('logScale') : ''}</span></div>`;
 }
 
 export function showGameOver({ stationsSurvived, highestBalance, bestStation, history, records, daily }) {
@@ -660,16 +663,16 @@ export function showGameOver({ stationsSurvived, highestBalance, bestStation, hi
   const avgSt = tracked ? (records.sumStations / tracked).toFixed(1) : null;
   const row = (k, v) => `<div class="gameOver__stat"><span>${k}</span><strong>${v}</strong></div>`;
   el('goAllStats').innerHTML =
-    row('Runs played', String(runs)) +
-    (avgHigh !== null ? row('Average highest balance', formatUSD(avgHigh)) : '') +
-    (avgSt !== null ? row('Average stations survived', avgSt) : '') +
-    row('All-time highest balance', formatUSD(records.highestBalance)) +
-    row('ALL-INs survived (total)', String(records.totalAllInSurvived));
+    row(t('runsPlayed'), String(runs)) +
+    (avgHigh !== null ? row(t('avgHighest'), formatUSD(avgHigh)) : '') +
+    (avgSt !== null ? row(t('avgStations'), avgSt) : '') +
+    row(t('allTimeHighest'), formatUSD(records.highestBalance)) +
+    row(t('allInsSurvived'), String(records.totalAllInSurvived));
 
   const dailyEl = el('goDaily');
   if (daily) {
     dailyEl.hidden = false;
-    dailyEl.textContent = `Daily challenge ${daily.date}: this run ${formatUSD(highestBalance)} · today's best ${formatUSD(daily.best)} · plays today ${daily.plays}`;
+    dailyEl.textContent = `${t('dailyChallenge')} ${daily.date}: ${formatUSD(highestBalance)} · ${t('best')} ${formatUSD(daily.best)} · ${daily.plays}`;
   } else {
     dailyEl.hidden = true;
   }

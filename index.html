@@ -14,22 +14,35 @@
   <!-- TOP BAR -->
   <header class="topbar">
     <div class="topbar__stat">
-      <span class="topbar__label">Balance</span>
+      <span class="topbar__label" data-i18n="balance">Balance</span>
       <span class="topbar__value topbar__value--gold" id="statBalance">$1,000</span>
     </div>
     <div class="topbar__stat">
-      <span class="topbar__label">Station</span>
+      <span class="topbar__label" data-i18n="station">Station</span>
       <span class="topbar__value" id="statStation">1</span>
     </div>
     <div class="topbar__stat">
-      <span class="topbar__label">Best</span>
+      <span class="topbar__label" data-i18n="best">Best</span>
       <span class="topbar__value" id="statBest">0</span>
     </div>
-    <button class="playerBtn" id="playerBtn" aria-label="Change player" title="Change player">PLAYER</button>
+    <button class="playerBtn" id="playerBtn" aria-label="Change player" title="Change player" data-i18n="player">PLAYER</button>
+    <button class="settingsBtn" id="settingsBtn" aria-label="Settings" title="Settings">&#9881;</button>
     <button class="soundToggle" id="soundToggle" aria-label="Toggle sound" title="Toggle sound">
       <span id="soundIcon">&#128266;</span>
     </button>
   </header>
+
+  <!-- SETTINGS PANEL -->
+  <div class="settingsPanel" id="settingsPanel" hidden>
+    <div class="settingsPanel__box">
+      <div class="settingsPanel__title" data-i18n="settings">SETTINGS</div>
+      <div class="settingsPanel__row">
+        <span class="settingsPanel__label" data-i18n="language">Language</span>
+        <button class="langBtn" id="langHe">&#1506;&#1489;&#1512;&#1497;&#1514;</button>
+        <button class="langBtn" id="langEn">English</button>
+      </div>
+    </div>
+  </div>
 
   <!-- PROGRESS AREA -->
   <div class="progress" id="progressArea">
@@ -42,7 +55,7 @@
   <!-- MAIN GAME VIEW -->
   <main class="gameView" id="gameView">
     <section class="offers" id="offersArea" aria-live="polite"></section>
-    <p class="virtualNote">VIRTUAL MONEY ONLY</p>
+    <p class="virtualNote" data-i18n="virtualOnly">VIRTUAL MONEY ONLY</p>
   </main>
 
   <!-- ROLL STAGE: felt table, 3D die and result -->
@@ -60,20 +73,20 @@
         </div>
       </div>
       <p class="diceArea__hint" id="diceHint">Choose an offer to roll the dice</p>
-      <button class="skipRollBtn" id="skipRollBtn">Tap to skip</button>
+      <button class="skipRollBtn" id="skipRollBtn" data-i18n="tapToSkip">Tap to skip</button>
     </section>
     <section class="result" id="resultArea" hidden>
       <div class="result__banner" id="resultBanner">WIN</div>
       <div class="result__row">
-        <span>Payout</span>
+        <span data-i18n="payout">Payout</span>
         <strong id="resultPayout">$0</strong>
       </div>
       <div class="result__row">
-        <span>Net Change</span>
+        <span data-i18n="netChange">Net Change</span>
         <strong id="resultNet">$0</strong>
       </div>
       <div class="result__row">
-        <span>New Balance</span>
+        <span data-i18n="newBalance">New Balance</span>
         <strong id="resultBalance">$0</strong>
       </div>
     </section>
@@ -89,32 +102,30 @@
       <div class="walkShadow"></div>
       <div class="walkActor" id="walkActor"><img id="walkImgA" alt="" /><img id="walkImgB" alt="" /></div>
       <div class="walkVignette"></div>
-      <div class="walkCaption" id="walkCaption">WALKING TO NEXT STATION</div>
+      <div class="walkCaption" id="walkCaption" data-i18n="walkingToNext">WALKING TO NEXT STATION</div>
       <div class="walkBalance" id="walkBalance" hidden>
-        <span class="walkBalance__label">BALANCE</span>
+        <span class="walkBalance__label" data-i18n="balanceCaps">BALANCE</span>
         <span class="walkBalance__value" id="walkBalanceValue">$0</span>
       </div>
     </div>
-    <button class="skipBtn" id="skipWalkBtn">Skip &#9654;</button>
+    <button class="skipBtn" id="skipWalkBtn" data-i18n="skip">Skip &#9654;</button>
   </div>
 
   <!-- PLAYER SELECT -->
   <div class="playerSelect" id="playerSelect" hidden>
-    <h1 class="playerSelect__title">CHOOSE YOUR PLAYER</h1>
-    <p class="playerSelect__sub">Who walks the corridor?</p>
+    <h1 class="playerSelect__title" data-i18n="choosePlayer">CHOOSE YOUR PLAYER</h1>
+    <p class="playerSelect__sub" data-i18n="whoWalks">Who walks the corridor?</p>
     <div class="playerSelect__row">
       <button class="playerCard" id="pickHe" data-player="he">
-        <span class="playerCard__art"><img src="assets/characters/businessman.png" alt="He" /></span>
-        <span class="playerCard__name">HE</span>
-        <span class="playerCard__btn">SELECT</span>
+        <span class="playerCard__art"><img src="assets/characters/businessman.png" alt="Businessman" /></span>
+        <span class="playerCard__btn" data-i18n="select">SELECT</span>
       </button>
       <button class="playerCard" id="pickShe" data-player="she">
-        <span class="playerCard__art"><img src="assets/characters/businesswoman.png" alt="She" /></span>
-        <span class="playerCard__name">SHE</span>
-        <span class="playerCard__btn">SELECT</span>
+        <span class="playerCard__art"><img src="assets/characters/businesswoman.png" alt="Businesswoman" /></span>
+        <span class="playerCard__btn" data-i18n="select">SELECT</span>
       </button>
     </div>
-    <p class="playerSelect__note">YOU CAN CHANGE IT LATER</p>
+    <p class="playerSelect__note" data-i18n="changeLater">YOU CAN CHANGE IT LATER</p>
     <button class="helpBtn" id="helpBtn" aria-label="How to play" title="How to play">?</button>
     </div>
 
@@ -132,31 +143,31 @@
   <!-- GAME OVER SCREEN -->
   <div class="gameOver" id="gameOverScreen" hidden>
     <div class="gameOver__panel">
-      <h1 class="gameOver__title">GAME OVER</h1>
-      <p class="gameOver__sub">The house always collects.</p>
+      <h1 class="gameOver__title" data-i18n="gameOver">GAME OVER</h1>
+      <p class="gameOver__sub" data-i18n="houseCollects">The house always collects.</p>
       <div class="gameOver__stats">
         <div class="gameOver__stat gameOver__stat--hi">
-          <span>Highest Balance</span>
+          <span data-i18n="highestBalance">Highest Balance</span>
           <strong id="goHighest">$0</strong>
         </div>
         <div class="gameOver__stat">
-          <span>Stations Survived</span>
+          <span data-i18n="stationsSurvived">Stations Survived</span>
           <strong id="goStations">0</strong>
         </div>
         <div class="gameOver__stat">
-          <span>Best Station Record</span>
+          <span data-i18n="bestStationRecord">Best Station Record</span>
           <strong id="goBest">0</strong>
         </div>
       </div>
       <div class="gameOver__chartWrap">
-        <div class="gameOver__chartTitle">BALANCE BY STATION</div>
+        <div class="gameOver__chartTitle" data-i18n="balanceByStation">BALANCE BY STATION</div>
         <div id="goChart"></div>
       </div>
       <div class="gameOver__stats gameOver__stats--all" id="goAllStats"></div>
       <p class="gameOver__daily" id="goDaily" hidden></p>
-      <a class="shareBtn" id="shareBtn" href="https://wa.me/" target="_blank" rel="noopener">SHARE ON WHATSAPP</a>
-      <button class="playAgainBtn" id="playAgainBtn">PLAY AGAIN</button>
-      <button class="playDailyBtn" id="playDailyBtn">PLAY TODAY'S DAILY CHALLENGE</button>
+      <a class="shareBtn" id="shareBtn" href="https://wa.me/" target="_blank" rel="noopener" data-i18n="shareWhatsapp">SHARE ON WHATSAPP</a>
+      <button class="playAgainBtn" id="playAgainBtn" data-i18n="playAgain">PLAY AGAIN</button>
+      <button class="playDailyBtn" id="playDailyBtn" data-i18n="playDaily">PLAY TODAY'S DAILY CHALLENGE</button>
     </div>
   </div>
 

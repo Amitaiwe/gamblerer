@@ -349,9 +349,31 @@ button { font-family: var(--sans); cursor: pointer; border: none; background: no
 .walkActor { position: absolute; left: 50%; bottom: -20px; height: 72%; aspect-ratio: 407 / 1100; transform: translateX(-50%); transform-origin: 50% 100%; will-change: transform; }
 .walkActor img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 8px #000); }
 
-/* --- Fast balance counter between stations --- */
+/* --- MOCKUP: fast balance counter between stations --- */
 .walkBalance { position: absolute; top: 108px; width: 100%; text-align: center; z-index: 3; }
 .walkBalance__label { display: block; font: bold 15px var(--sans); letter-spacing: 6px; color: var(--gold-dim); text-shadow: 0 0 8px #000; }
 .walkBalance__value { display: inline-block; margin-top: 6px; font-size: 58px; font-weight: bold; color: var(--cream); font-variant-numeric: tabular-nums; text-shadow: 0 2px 8px rgba(0,0,0,.85); }
 .walkBalance__value.is-up { color: var(--green); text-shadow: 0 0 18px rgba(88,224,143,.55), 0 2px 8px rgba(0,0,0,.85); }
 .walkBalance__value.is-down { color: var(--red); text-shadow: 0 0 18px rgba(255,106,92,.55), 0 2px 8px rgba(0,0,0,.85); }
+
+/* --- MOCKUP badge --- */
+
+/* --- MOCKUP i18n: settings button + language panel --- */
+.settingsBtn { font: bold 10px var(--sans); letter-spacing: 2px; color: var(--gold-soft); border: 1px solid rgba(229,193,88,.5); border-radius: 999px; padding: 6px 10px; background: none; font-size: 15px; line-height: 1; }
+.settingsPanel { position: fixed; inset: 0; z-index: 60; background: rgba(20,4,10,.55); }
+.settingsPanel__box { position: absolute; top: 64px; right: 12px; background: var(--card-top); border: 1.5px solid var(--gold); border-radius: 14px; padding: 14px 16px; min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.settingsPanel__title { font: bold 11px var(--sans); letter-spacing: 4px; color: var(--gold-soft); margin-bottom: 10px; text-align: center; }
+.settingsPanel__row { display: flex; align-items: center; gap: 8px; }
+.settingsPanel__label { font: 12px var(--sans); color: #d9c9a0; margin-inline-end: auto; }
+.langBtn { font: bold 13px var(--sans); color: var(--cream); border: 1px solid rgba(229,193,88,.5); border-radius: 8px; padding: 6px 12px; background: rgba(0,0,0,.3); }
+.langBtn.is-current { background: var(--gold); color: var(--velvet); border-color: var(--gold); }
+html[dir="rtl"] .topbar__label, html[dir="rtl"] .walkBalance__label, html[dir="rtl"] .walkCaption, html[dir="rtl"] .settingsPanel__title { letter-spacing: 1px; }
+
+/* --- MOCKUP i18n fixes: keep HUD gear upper-right in both languages; keep numbers LTR --- */
+.topbar { direction: ltr; }
+html[dir="rtl"] .faceCell__v,
+html[dir="rtl"] .offerCard__costValue,
+html[dir="rtl"] .walkBalance__value,
+html[dir="rtl"] .result__row strong,
+html[dir="rtl"] .topbar__value,
+html[dir="rtl"] .gameOver__stat strong { direction: ltr; unicode-bidi: isolate; }

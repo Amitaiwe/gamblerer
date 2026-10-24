@@ -39,6 +39,7 @@ import {
   onModeClick,
   prewarmAllCharacterArt,
 } from './ui.js';
+import { getLang, setLang, applyStatic, t } from './i18n.js';
 
 let state = createInitialState();
 
@@ -52,7 +53,7 @@ function render() {
   renderOffers(state, handleSelectOffer);
   hideResult();
   hideRollStage();
-  setDiceHint(state.isAllIn ? 'ALL-IN — choose wisely' : 'Choose an offer to roll the dice');
+  setDiceHint(state.isAllIn ? t('allInChoose') : t('chooseOffer'));
   setDiceFaces(null);
 }
 
@@ -73,7 +74,7 @@ function runDiceSequence() {
     const roll = rollDice(); // { dieA, dieB, isDouble, result }
 
     setDieRolling(true);
-    setDiceHint('Rolling...');
+    setDiceHint(t('rolling'));
     showRollStage();
 
     // The animation only displays the two rolled dice (about 3 s, tap to skip).
@@ -82,8 +83,8 @@ function runDiceSequence() {
       setDiceFaces(roll);
       setDiceHint(
         roll.isDouble
-          ? `DOUBLE ${roll.dieA}! +${roll.dieA * 10}% bonus`
-          : `${roll.dieA} vs ${roll.dieB} - ${roll.result} counts`
+          ? (getLang() === 'he' ? `דאבל ${roll.dieA}! בונוס +${roll.dieA * 10}%` : `DOUBLE ${roll.dieA}! +${roll.dieA * 10}% bonus`)
+          : `${roll.dieA} ${t('vsWord')} ${roll.dieB} - ${roll.result} ${t('countsWord')}`
       );
 
       const balanceBefore = state.balance;
@@ -165,7 +166,26 @@ function initSoundToggle() {
   });
 }
 
+function initSettings() {
+  const panel = document.getElementById('settingsPanel');
+  const btnHe = document.getElementById('langHe');
+  const btnEn = document.getElementById('langEn');
+  const refresh = () => {
+    btnHe.classList.toggle('is-current', getLang() === 'he');
+    btnEn.classList.toggle('is-current', getLang() === 'en');
+  };
+  const apply = (l) => { setLang(l); applyStatic(); render(); refresh(); };
+  document.getElementById('settingsBtn').addEventListener('click', () => { panel.hidden = !panel.hidden; });
+  panel.addEventListener('click', (e) => { if (e.target === panel) panel.hidden = true; });
+  btnHe.addEventListener('click', () => apply('he'));
+  btnEn.addEventListener('click', () => apply('en'));
+  setLang(getLang());
+  applyStatic();
+  refresh();
+}
+
 function init() {
+  initSettings();
   document.getElementById('playAgainBtn').addEventListener('click', restartGame);
   document.getElementById('playDailyBtn').addEventListener('click', () => askPlayerThenStart('daily'));
   onModeClick(() => startRun(state.mode === 'daily' ? 'free' : 'daily'));
