@@ -14,6 +14,7 @@ import {
 import {
   applyOrdinaryBet,
   applyAllInBet,
+  doubleBonus,
   isGameOver,
 } from './diceLogic.js';
 import { loadRecords } from './records.js';
@@ -67,13 +68,16 @@ export function selectOffer(state, offerId) {
  * Resolve the currently selected offer with a given dice roll.
  * Returns a new state object with outcome details populated.
  */
-export function resolveSelectedOffer(state, rollResult) {
+export function resolveSelectedOffer(state, roll) {
   const offer = state.offers.find((o) => o.id === state.selectedOfferId);
   if (!offer) return state;
 
+  const rollResult = roll.result;
+  // A double keeps its own number and adds dieA * 10% of the stake.
+  const bonus = doubleBonus(roll, state.isAllIn ? state.balance : offer.cost);
   const result = state.isAllIn
-    ? applyAllInBet(state.balance, offer, rollResult)
-    : applyOrdinaryBet(state.balance, offer, rollResult);
+    ? applyAllInBet(state.balance, offer, rollResult, bonus)
+    : applyOrdinaryBet(state.balance, offer, rollResult, bonus);
 
   const newBalance = result.newBalance;
   const won = result.netChange >= 0;
@@ -89,6 +93,7 @@ export function resolveSelectedOffer(state, rollResult) {
     lastRollResult: rollResult,
     lastOutcome: {
       payout: result.payout,
+      doubleBonus: bonus,
       cost: result.cost,
       netChange: result.netChange,
       newBalance,

@@ -14,7 +14,7 @@ import {
   advanceStation,
   stationsSurvived,
 } from './gameState.js';
-import { rollDie } from './diceLogic.js';
+import { rollDice } from './diceLogic.js';
 import { finalizeRun, loadRecords, saveDailyResult } from './records.js';
 import { CHARACTERS, COLOR_PALETTE } from './characterConfig.js';
 import { Sound } from './sound.js';
@@ -22,8 +22,8 @@ import {
   renderTopBar,
   renderOffers,
   setDieRolling,
-  setDieFace,
-  playDieRoll,
+  setDiceFaces,
+  playDiceRoll,
   showRollStage,
   hideRollStage,
   showPlayerSelect,
@@ -53,7 +53,7 @@ function render() {
   hideResult();
   hideRollStage();
   setDiceHint(state.isAllIn ? 'ALL-IN — choose wisely' : 'Choose an offer to roll the dice');
-  setDieFace(null);
+  setDiceFaces(null);
 }
 
 async function handleSelectOffer(offerId) {
@@ -70,19 +70,23 @@ function runDiceSequence() {
     // Resolve the ACTUAL result up front via the pure game-logic
     // function. The animation below only displays faces; it never
     // influences or rerolls this value.
-    const actualResult = rollDie();
+    const roll = rollDice(); // { dieA, dieB, isDouble, result }
 
     setDieRolling(true);
     setDiceHint('Rolling...');
     showRollStage();
 
-    // The animation only displays actualResult (about 3 s, tap to skip).
-    playDieRoll(actualResult, { reducedMotion: prefersReducedMotion }).then(async () => {
+    // The animation only displays the two rolled dice (about 3 s, tap to skip).
+    playDiceRoll(roll, { reducedMotion: prefersReducedMotion }).then(async () => {
       setDieRolling(false);
-      setDieFace(actualResult);
-      setDiceHint(`Result: ${actualResult}`);
+      setDiceFaces(roll);
+      setDiceHint(
+        roll.isDouble
+          ? `DOUBLE ${roll.dieA}! +${roll.dieA * 10}% bonus`
+          : `${roll.dieA} vs ${roll.dieB} - ${roll.result} counts`
+      );
 
-      state = resolveSelectedOffer(state, actualResult);
+      state = resolveSelectedOffer(state, roll);
       const outcome = state.lastOutcome;
 
       renderTopBar(state);

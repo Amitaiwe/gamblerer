@@ -176,7 +176,12 @@ button { font-family: var(--sans); cursor: pointer; border: none; background: no
   box-shadow: 0 0 0 2px var(--gold), inset 0 0 60px rgba(0,0,0,.65), 0 20px 40px rgba(0,0,0,.6);
 }
 .diceArea { position: relative; width: 100%; max-width: 560px; text-align: center; }
-.dieScene { position: relative; width: 100%; height: 330px; margin-top: 30px; perspective: 700px; }
+.diceRow { display: flex; gap: 10px; justify-content: center; align-items: flex-start; }
+.dieScene { position: relative; width: 50%; height: 330px; margin-top: 30px; perspective: 700px; transition: opacity .3s, background .3s; border-radius: 24px; }
+.dieScene.is-dim { opacity: .35; }
+/* Gold glow must sit on the scene background, not as a filter on the cube:
+   a filter would flatten the cube's preserve-3d and hide its faces. */
+.dieScene.is-counted { background: radial-gradient(ellipse 90% 55% at 50% 58%, rgba(229,193,88,.6), transparent 70%); }
 .dieCube { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; transform-style: preserve-3d; }
 .dieFace3d {
   position: absolute; inset: 0; border-radius: 20px;
@@ -211,6 +216,8 @@ button { font-family: var(--sans); cursor: pointer; border: none; background: no
 .result:has(.is-loss) { border-color: var(--red); background: rgba(42,10,12,.6); box-shadow: 0 0 30px rgba(255,106,92,.3); }
 .result__row { display: flex; justify-content: space-between; padding: 5px 0; font: 14px var(--sans); }
 .result__row strong { color: var(--gold-soft); font-size: 17px; }
+
+.faceCell--impossible { opacity: .35; }
 
 /* ---------------- WALKING CORRIDOR ---------------- */
 

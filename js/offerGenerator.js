@@ -33,7 +33,7 @@ function roundToTen(n) {
 
 // Rare Jackpot 6-face multiplier. Was 9.5 (return ~1.67 per $1, far better than
 // every other offer). 6.0 gives return ~1.08, in line with the other bets.
-export const RARE_JACKPOT_MULT = 6.0;
+export const RARE_JACKPOT_MULT = 3.1;
 
 // Percent-of-balance cost scaling: from this station on, each ordinary offer
 // costs at least this share of the current balance (cost and payouts scale
@@ -56,10 +56,10 @@ const ORDINARY_TEMPLATES = [
       payouts: {
         1: roundToTen(cost * 0.5),
         2: roundToTen(cost * 0.5),
-        3: roundToTen(cost * 1.0),
-        4: roundToTen(cost * 1.3),
-        5: roundToTen(cost * 1.3),
-        6: roundToTen(cost * 1.8),
+        3: roundToTen(cost * 0.8),
+        4: roundToTen(cost * 1.0),
+        5: roundToTen(cost * 1.1),
+        6: roundToTen(cost * 1.2),
       },
       label: 'Conservative',
     };
@@ -72,11 +72,11 @@ const ORDINARY_TEMPLATES = [
       cost,
       payouts: {
         1: 0,
-        2: roundToTen(cost * 0.5),
-        3: roundToTen(cost * 1.0),
-        4: roundToTen(cost * 1.0),
-        5: roundToTen(cost * 1.75),
-        6: roundToTen(cost * 2.2),
+        2: 0,
+        3: roundToTen(cost * 0.5),
+        4: roundToTen(cost * 0.9),
+        5: roundToTen(cost * 1.2),
+        6: roundToTen(cost * 1.5),
       },
       label: 'Balanced',
     };
@@ -91,9 +91,9 @@ const ORDINARY_TEMPLATES = [
         1: 0,
         2: 0,
         3: 0,
-        4: roundToTen(cost * 0.9),
-        5: roundToTen(cost * 1.5),
-        6: roundToTen(cost * 4.0),
+        4: roundToTen(cost * 0.8),
+        5: roundToTen(cost * 1.2),
+        6: roundToTen(cost * 1.8),
       },
       label: 'High-Risk',
     };
@@ -129,32 +129,32 @@ const ALL_IN_TEMPLATE_PAIRS = [
     // "Coin flip plus" — wide safe-ish split
     {
       label: 'Steady Nerve',
-      payoutMultipliers: { 1: 0, 2: 0, 3: 1.1, 4: 1.1, 5: 1.6, 6: 1.6 },
+      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1.5, 6: 1.5 },
     },
     // "High variance" — mostly bust, huge jackpot
     {
       label: 'Double or Nothing',
-      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 2.4, 6: 2.4 },
+      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 2.4 },
     },
   ],
   [
     {
       label: 'Cautious Hedge',
-      payoutMultipliers: { 1: 0.5, 2: 0.5, 3: 0.9, 4: 0.9, 5: 1.4, 6: 1.4 },
+      payoutMultipliers: { 1: 0.4, 2: 0.4, 3: 0.6, 4: 0.8, 5: 1.0, 6: 1.1 },
     },
     {
       label: 'All or Nothing',
-      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 3.0 },
+      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 1.4 },
     },
   ],
   [
     {
       label: 'Fifty-Fifty',
-      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 1.9, 5: 1.9, 6: 1.9 },
+      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1.6, 6: 1.6 },
     },
     {
       label: 'Lucky Sixes',
-      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 1.1, 6: 3.6 },
+      payoutMultipliers: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 2.35 },
     },
   ],
 

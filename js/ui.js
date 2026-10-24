@@ -8,6 +8,7 @@
  */
 
 import { getCharacterById, getColorById } from './characterConfig.js';
+import { RESULT_PROBS, summarizeRisk } from './diceLogic.js';
 import { getRecoloredImage, prewarmRecolor } from './recolor.js';
 
 export function formatUSD(amount) {
@@ -120,18 +121,13 @@ function faceLabel(net, isAllIn) {
   return compactMoney(net);
 }
 
-/** Risk line: chance (out of 6 equal die faces) to end the bet in profit / in loss. */
+// Result probabilities and the exact profit/loss split live in
+// diceLogic.js so the game logic and the display can never drift apart.
+export { RESULT_PROBS };
+
+/** Risk line: probability of ending the bet in profit / in loss. */
 export function riskSummary(offer, isAllIn) {
-  const nets = faceNets(offer, isAllIn);
-  const profit = nets.filter((n) => n > 0).length;
-  const loss = nets.filter((n) => n < 0).length;
-  return {
-    profit,
-    loss,
-    even: 6 - profit - loss,
-    profitPct: Math.round((profit / 6) * 100),
-    lossPct: Math.round((loss / 6) * 100),
-  };
+  return summarizeRisk(offer, isAllIn);
 }
 
 async function renderOfferCardArt(imgEl, offer) {
@@ -190,7 +186,7 @@ export function renderOffers(state, onSelect) {
     nets.forEach((net, i) => {
       const li = document.createElement('li');
       const cls = net > 0 ? 'win' : net < 0 ? 'lose' : 'even';
-      li.className = `faceCell ${cls}`;
+      li.className = `faceCell ${cls}${RESULT_PROBS[i + 1] === 0 ? ' faceCell--impossible' : ''}`;
       li.innerHTML = `<span class="faceCell__n">${i + 1}</span><span class="faceCell__v">${faceLabel(net, state.isAllIn)}</span>`;
       outcomesList.appendChild(li);
     });
@@ -204,7 +200,7 @@ export function renderOffers(state, onSelect) {
   });
 }
 
-/* ---------------- DICE (3D cube with pips) ---------------- */
+/* ---------------- DICE (two 3D cubes with pips) ---------------- */
 
 const PIP_CELLS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 const FACE_TRANSFORM = {
@@ -215,13 +211,17 @@ const FACE_TRANSFORM = {
 const FACE_FINAL = { 1: [0, 0], 6: [0, 180], 3: [0, -90], 4: [0, 90], 2: [-90, 0], 5: [90, 0] };
 
 const ROLL_SECONDS = 3;
-let dieBuilt = false;
-let dieRaf = null;
-let dieSkip = null;
+const dieState = {}; // sceneId -> { built, raf }
 
-function ensureDie() {
-  if (dieBuilt) return;
-  const cube = el('dieCube');
+function dieParts(sceneId) {
+  const scene = el(sceneId);
+  return { scene, cube: scene.querySelector('.dieCube'), shadow: scene.querySelector('.dieShadow') };
+}
+
+function ensureDie(sceneId) {
+  dieState[sceneId] = dieState[sceneId] || { built: false, raf: null };
+  if (dieState[sceneId].built) return;
+  const { cube } = dieParts(sceneId);
   for (let n = 1; n <= 6; n++) {
     const f = document.createElement('div');
     f.className = 'dieFace3d';
@@ -233,20 +233,24 @@ function ensureDie() {
     }
     cube.appendChild(f);
   }
-  dieBuilt = true;
+  dieState[sceneId].built = true;
 }
 
-function poseDie(rx, ry, rz, lift) {
-  const cube = el('dieCube');
+function ensureDice() {
+  ensureDie('die');
+  ensureDie('die2');
+}
+
+function poseDie(sceneId, rx, ry, rz, lift) {
+  const { cube, shadow } = dieParts(sceneId);
   cube.style.transform =
     `translateY(${-lift}px) scale(${1 + lift / 500}) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
-  const sh = el('dieShadow');
-  sh.style.opacity = String(Math.max(0, 1 - lift / 260));
-  sh.style.transform = `scale(${1 - lift / 400})`;
+  shadow.style.opacity = String(Math.max(0, 1 - lift / 260));
+  shadow.style.transform = `scale(${1 - lift / 400})`;
 }
 
 export function showRollStage() {
-  ensureDie();
+  ensureDice();
   el('rollStage').hidden = false;
 }
 
@@ -260,64 +264,120 @@ export function setDieRolling(isRolling) {
   if (isRolling) hint.textContent = 'Rolling...';
 }
 
-/** Show a face without animation. value null = idle. */
-export function setDieFace(value) {
-  ensureDie();
-  const fin = FACE_FINAL[value] || FACE_FINAL[1];
-  poseDie(fin[0], fin[1], 0, 0);
+/** Highlight the die that counts (both on a double), dim the other. */
+function markDice(roll) {
+  const a = el('die');
+  const b = el('die2');
+  a.classList.remove('is-counted', 'is-dim');
+  b.classList.remove('is-counted', 'is-dim');
+  if (!roll) return;
+  if (roll.isDouble) {
+    a.classList.add('is-counted');
+    b.classList.add('is-counted');
+  } else if (roll.dieA >= roll.dieB) {
+    a.classList.add('is-counted');
+    b.classList.add('is-dim');
+  } else {
+    b.classList.add('is-counted');
+    a.classList.add('is-dim');
+  }
+}
+
+/** Show faces without animation. roll null = idle (both show 1, no marks). */
+export function setDiceFaces(roll) {
+  ensureDice();
+  const finA = FACE_FINAL[roll ? roll.dieA : 1] || FACE_FINAL[1];
+  const finB = FACE_FINAL[roll ? roll.dieB : 1] || FACE_FINAL[1];
+  poseDie('die', finA[0], finA[1], 0, 0);
+  poseDie('die2', finB[0], finB[1], 0, 0);
+  markDice(roll);
 }
 
 /**
- * Animate the die for ~3 seconds and land on `result`.
- * The result is decided by rollDie() in diceLogic.js BEFORE this is
- * called. This function only displays it. Tap the die area or the skip
- * button to jump to the landed face. Resolves when landed or skipped.
+ * Animate one die for ~3 seconds and land on `face`.
+ * The face is decided by rollDice() in diceLogic.js BEFORE this is
+ * called. This function only displays it.
  */
-export function playDieRoll(result, { reducedMotion } = {}) {
-  ensureDie();
-  showRollStage();
-  const fin = FACE_FINAL[result] || FACE_FINAL[1];
+function playOneDie(sceneId, face, { reducedMotion, mirror, registerFinish, seconds = ROLL_SECONDS }) {
+  ensureDie(sceneId);
+  const fin = FACE_FINAL[face] || FACE_FINAL[1];
+  const st = dieState[sceneId];
   return new Promise((resolve) => {
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
-      if (dieRaf) cancelAnimationFrame(dieRaf);
-      dieRaf = null;
-      dieSkip = null;
-      el('die').removeEventListener('click', finish);
-      el('skipRollBtn').removeEventListener('click', finish);
-      poseDie(fin[0], fin[1], 0, 0);
+      if (st.raf) cancelAnimationFrame(st.raf);
+      st.raf = null;
+      poseDie(sceneId, fin[0], fin[1], 0, 0);
       resolve();
     };
-    dieSkip = finish;
+    registerFinish(finish);
     if (reducedMotion) {
       window.setTimeout(finish, 300);
       return;
     }
-    el('die').addEventListener('click', finish);
-    el('skipRollBtn').addEventListener('click', finish);
-
     const start = performance.now();
     const frame = (now) => {
       const t = (now - start) / 1000;
-      if (t >= ROLL_SECONDS) { finish(); return; }
-      const e = 1 - Math.pow(1 - t / ROLL_SECONDS, 3.2);
+      if (t >= seconds) { finish(); return; }
+      // Spin at a steady pace, then settle during the final quarter of this
+      // die's own duration, so the 0.5s stagger between the dice stays visible.
+      const u = t / seconds;
+      const e = u < 0.75 ? u : 0.75 + 0.25 * (1 - Math.pow(1 - (u - 0.75) / 0.25, 3));
       const rx = fin[0] + (1 - e) * 900;
-      const ry = fin[1] + (1 - e) * 1100;
-      const rz = (1 - e) * 200;
+      const ry = fin[1] + (1 - e) * 1100 * mirror;
+      const rz = (1 - e) * 200 * mirror;
       let lift = 0;
       if (t < 0.7) {
         lift = Math.sin(Math.PI * t / 0.7) * 120;
-      } else if (t < 2.75) {
+      } else if (t < seconds - 0.25) {
         const bt = t - 0.7;
         const amp = 60 * Math.pow(0.35, Math.floor(bt / 0.45));
         lift = Math.sin(Math.PI * ((bt % 0.45) / 0.45)) * amp;
       }
-      poseDie(rx, ry, rz, lift);
-      dieRaf = requestAnimationFrame(frame);
+      poseDie(sceneId, rx, ry, rz, lift);
+      st.raf = requestAnimationFrame(frame);
     };
-    dieRaf = requestAnimationFrame(frame);
+    st.raf = requestAnimationFrame(frame);
+  });
+}
+
+/**
+ * Animate both dice (~3 s, mirrored spins) and land on the rolled faces.
+ * Tapping either die or the skip button jumps both to the landed faces.
+ * Resolves when both have landed, then marks the die that counts.
+ */
+export function playDiceRoll(roll, { reducedMotion } = {}) {
+  ensureDice();
+  showRollStage();
+  markDice(null);
+  const finishes = [];
+  const registerFinish = (f) => finishes.push(f);
+  const finishAll = () => finishes.forEach((f) => f());
+  const sceneA = el('die');
+  const sceneB = el('die2');
+  const skipBtn = el('skipRollBtn');
+  sceneA.addEventListener('click', finishAll);
+  sceneB.addEventListener('click', finishAll);
+  skipBtn.addEventListener('click', finishAll);
+  const cleanup = () => {
+    sceneA.removeEventListener('click', finishAll);
+    sceneB.removeEventListener('click', finishAll);
+    skipBtn.removeEventListener('click', finishAll);
+  };
+  // Both dice spin together. Which side lands first is random on every roll,
+  // independent of the rolled values; the second die lands exactly 0.5s later.
+  // This is display-only timing - it never influences the result.
+  const leftFirst = Math.random() < 0.5;
+  const secondsA = leftFirst ? ROLL_SECONDS : ROLL_SECONDS + 0.5;
+  const secondsB = leftFirst ? ROLL_SECONDS + 0.5 : ROLL_SECONDS;
+  return Promise.all([
+    playOneDie('die', roll.dieA, { reducedMotion, mirror: 1, registerFinish, seconds: secondsA }),
+    playOneDie('die2', roll.dieB, { reducedMotion, mirror: -1, registerFinish, seconds: secondsB }),
+  ]).then(() => {
+    cleanup();
+    markDice(roll);
   });
 }
 
@@ -366,7 +426,8 @@ const HELP = {
     lines: [
       'Virtual money only. You start with $1,000. Nothing here is real.',
       'Every station offers two bets. Pick one. It costs money up front.',
-      'Then a die is rolled. Each number from 1 to 6 is equally likely. The offer shows what each number pays: red means you lose money, green means you win.',
+      'Then two dice are rolled. The higher number counts. The offer shows what each result pays: red means you lose money, green means you win.',
+      'A double keeps its own number and always adds a bonus: double 1 adds 10% of your bet, double 2 adds 20%, and so on up to double 6, which adds 60%. The higher the double, the bigger the bonus.',
       'Every second station is ALL-IN: your whole balance is at stake.',
       'After each bet you walk to the next station. When your balance hits $0, the game is over.',
       'Daily challenge: every player gets the same offers each day (the die is still random).',
@@ -378,7 +439,8 @@ const HELP = {
     lines: [
       'כסף וירטואלי בלבד. מתחילים עם $1,000. שום דבר כאן אינו אמיתי.',
       'בכל תחנה יש שתי הצעות הימור. בוחרים אחת, והיא עולה כסף מראש.',
-      'אחר כך מוטלת קוביה. לכל מספר מ-1 עד 6 יש סיכוי שווה. ההצעה מראה כמה משלם כל מספר: אדום זה הפסד, ירוק זה רווח.',
+      'אחר כך מוטלות שתי קוביות. המספר הגבוה קובע. ההצעה מראה כמה משלמת כל תוצאה: אדום זה הפסד, ירוק זה רווח.',
+      'דאבל שומר על המספר שלו ותמיד מוסיף בונוס: דאבל 1 מוסיף 10% מההימור, דאבל 2 מוסיף 20%, וכך הלאה עד דאבל 6 שמוסיף 60%. ככל שהדאבל גבוה יותר, הבונוס גדול יותר.',
       'כל תחנה שנייה היא ALL-IN: כל היתרה שלך על הכף.',
       'אחרי כל הימור הולכים לתחנה הבאה. כשהיתרה מגיעה ל-$0 המשחק נגמר.',
       'אתגר יומי: כל השחקנים מקבלים את אותן הצעות באותו יום (הקוביה נשארת אקראית).',
@@ -416,6 +478,8 @@ export function showPlayerSelect(onPick) {
       setPlayer(btn.dataset.player);
       preloadWalkFrames(btn.dataset.player);
       screen.hidden = true;
+      renderHelp();
+      el('helpPanel').hidden = false;
       if (onPick) onPick(btn.dataset.player);
     };
   });

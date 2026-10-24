@@ -49,9 +49,15 @@
   <div class="rollStage" id="rollStage" hidden>
     <div class="rollStage__felt"></div>
     <section class="diceArea" id="diceArea">
-      <div class="dieScene" id="die" aria-hidden="true">
-        <div class="dieShadow" id="dieShadow"></div>
-        <div class="dieCube" id="dieCube"></div>
+      <div class="diceRow">
+        <div class="dieScene" id="die" aria-hidden="true">
+          <div class="dieShadow"></div>
+          <div class="dieCube"></div>
+        </div>
+        <div class="dieScene" id="die2" aria-hidden="true">
+          <div class="dieShadow"></div>
+          <div class="dieCube"></div>
+        </div>
       </div>
       <p class="diceArea__hint" id="diceHint">Choose an offer to roll the dice</p>
       <button class="skipRollBtn" id="skipRollBtn">Tap to skip</button>
@@ -106,6 +112,8 @@
     </div>
     <p class="playerSelect__note">YOU CAN CHANGE IT LATER</p>
     <button class="helpBtn" id="helpBtn" aria-label="How to play" title="How to play">?</button>
+    </div>
+
     <div class="helpPanel" id="helpPanel" hidden>
       <div class="helpPanel__box">
         <div class="helpPanel__bar">
@@ -115,7 +123,6 @@
         <div class="helpPanel__body" id="helpBody"></div>
         <button class="helpClose" id="helpClose"></button>
       </div>
-    </div>
   </div>
 
   <!-- GAME OVER SCREEN -->
