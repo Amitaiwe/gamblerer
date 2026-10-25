@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.gamblerer.twa",
+    "sha256_cert_fingerprints": ["21:8F:6F:63:BB:B5:5A:01:88:AF:C3:0F:AB:69:C7:C0:DA:65:46:6D:9A:2D:1E:38:8B:D0:70:0E:EB:5B:A1:6C"]
+  }
+}]
