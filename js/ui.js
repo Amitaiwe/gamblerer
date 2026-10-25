@@ -654,7 +654,6 @@ export function showGameOver({ stationsSurvived, highestBalance, bestStation, hi
   const screen = el('gameOverScreen');
   el('goStations').textContent = String(stationsSurvived);
   el('goHighest').textContent = formatUSD(highestBalance);
-  el('goBest').textContent = String(bestStation);
   el('goChart').innerHTML = chartSvg(history || [1000]);
 
   const runs = records.totalRuns;
@@ -664,6 +663,7 @@ export function showGameOver({ stationsSurvived, highestBalance, bestStation, hi
   const row = (k, v) => `<div class="gameOver__stat"><span>${k}</span><strong>${v}</strong></div>`;
   el('goAllStats').innerHTML =
     row(t('runsPlayed'), String(runs)) +
+    row(t('allTimeBestStation'), String(bestStation)) +
     (avgHigh !== null ? row(t('avgHighest'), formatUSD(avgHigh)) : '') +
     (avgSt !== null ? row(t('avgStations'), avgSt) : '') +
     row(t('allTimeHighest'), formatUSD(records.highestBalance)) +

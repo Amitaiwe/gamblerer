@@ -277,7 +277,8 @@ button { font-family: var(--sans); cursor: pointer; border: none; background: no
 }
 .gameOver__panel { margin: auto 0; width: 100%; max-width: 440px; padding: 24px; text-align: center; }
 .gameOver__title { margin: 0; font-size: 44px; letter-spacing: 5px; color: var(--red); text-shadow: 0 0 24px var(--red-deep); }
-.gameOver__sub { font-style: italic; color: var(--gold-dim); margin: 6px 0 18px; }
+.gameOver__sub { font-style: italic; color: var(--gold-dim); margin: 6px 0 10px; }
+.gameOver__section { font: 11px var(--sans); letter-spacing: 2px; color: var(--gold-dim); margin: 14px 0 8px; text-align: center; }
 .gameOver__stats { border-top: 1px solid rgba(229,193,88,.35); border-bottom: 1px solid rgba(229,193,88,.35); padding: 8px 0; font: 14px var(--sans); }
 .gameOver__stat { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; }
 .gameOver__stat strong { color: var(--gold-soft); font-size: 17px; }
