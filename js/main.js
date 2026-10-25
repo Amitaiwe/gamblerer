@@ -131,6 +131,16 @@ async function handleGameOver() {
   const daily = state.mode === 'daily'
     ? saveDailyResult(state.dateKey, state.highestBalanceThisRun)
     : null;
+  // Aggregate-only global counters: 3 numbers, no IDs. Fire-and-forget.
+  fetch('/api/report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      stations: survived,
+      peak: Math.round(state.highestBalanceThisRun),
+      allins: state.allInSurvivedThisRun,
+    }),
+  }).catch(() => {});
   showGameOver({
     stationsSurvived: survived,
     highestBalance: state.highestBalanceThisRun,

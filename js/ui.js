@@ -436,6 +436,7 @@ const HELP = {
       'After each bet you walk to the next station. When your balance hits $0, the game is over.',
       'Daily challenge: every player gets the same offers each day (the die is still random).',
       'Your highest balance is saved and you can share it on WhatsApp.',
+      'Aggregate statistics only: when a game ends, 3 numbers (stations, peak balance, all-ins) are added to a global counter. We store no name, ID, or per-game history; our hosting provider keeps short-lived technical logs.',
     ],
   },
   he: {
@@ -449,6 +450,7 @@ const HELP = {
       'אחרי כל הימור הולכים לתחנה הבאה. כשהיתרה מגיעה ל-$0 המשחק נגמר.',
       'אתגר יומי: כל השחקנים מקבלים את אותן הצעות באותו יום (הקוביה נשארת אקראית).',
       'היתרה הכי גבוהה שלך נשמרת, ואפשר לשתף אותה בוואטסאפ.',
+      'סטטיסטיקה כללית בלבד: בסוף משחק נשלחים 3 מספרים (תחנות, יתרת שיא, אול־אינים) למונה כללי. אנחנו לא שומרים שם, מזהה או היסטוריית משחקים; ספק האחסון שומר יומנים טכניים קצרי־מועד.',
     ],
   },
 };
